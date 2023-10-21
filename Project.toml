@@ -1,0 +1,16 @@
+name = "Modulo2"
+uuid = "7e4462cd-8001-4c22-b109-db8e4e581e9c"
+authors = ["matthias314"]
+version = "0.1.0"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[weakdeps]
+LinearCombinations = "67be3549-475c-46bf-8928-de3404d670d9"
+
+[extensions]
+LinearExt = "LinearCombinations"
+
+[compat]
+julia = "1.6"
