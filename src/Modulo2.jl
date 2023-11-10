@@ -6,7 +6,7 @@ export ZZ2, ZZ2Array, ZZ2Vector, ZZ2Matrix, addcol!, swapcols!,
 import Base: show, ==, +, -, *, /, ^, inv, literal_pow,
     zero, one, iszero, isone, iseven, isodd, convert, rand, promote_rule,
     size, zeros, ones, getindex, setindex!, copy, inv, Bool
-    
+
 using Base: @propagate_inbounds
 
 import LinearAlgebra: dot, det
@@ -24,6 +24,8 @@ struct ZZ2 <: Number
     m::Bool
     ZZ2(m::Bool) = new(m)  # this avoids infinite recursion
 end
+
+Base.hash(a::ZZ2, h::UInt) = hash(a.m, h)
 
 ZZ2(a::ZZ2) = a
 ZZ2(x) = isinteger(x) ? ZZ2(isodd(x)) : error("cannot convert non-integer value to ZZ2")
@@ -76,18 +78,36 @@ promote_rule(::Type{<:Integer}, ::Type{ZZ2}) = ZZ2
 struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
     i1::Int
     data::Array{UInt,N}
+    ZZ2Array{N}(i1::Int, data::Array{UInt,N}) where N = new(i1, data)
+    # this avoids confusing error messages
 end
 
 const ZZ2Vector = ZZ2Array{1}
-
 const ZZ2Matrix = ZZ2Array{2}
 
-function ZZ2Array{N}(::UndefInitializer, ii...) where N
+function ZZ2Array{N}(::UndefInitializer, ii::NTuple{N,Integer}) where N
     i1 = 4 * ((ii[1] + 1 << 8 - 1) >> 8)
     ZZ2Array{N}(ii[1], Array{UInt, N}(undef, i1, ii[2:end]...))
 end
 
-ZZ2Array(::UndefInitializer, ii...) = ZZ2Array{length(ii)}(undef, ii...)
+ZZ2Array{N}(::UndefInitializer, ii::Integer...) where N = ZZ2Array{N}(undef, ii)
+
+ZZ2Array(::UndefInitializer, ii::NTuple{N,Integer}) where N = ZZ2Array{N}(undef, ii)
+
+ZZ2Array(::UndefInitializer, ii::Integer...) = ZZ2Array(undef, ii)
+
+function ZZ2Array{N}(a::AbstractArray{T,N}) where {T,N}
+    b = ZZ2Array(undef, size(a)...)
+    for i in eachindex(a)
+        b[i] = a[i]
+    end
+    b
+end
+
+ZZ2Array(a::AbstractArray{T,N}) where {T,N} = ZZ2Array{N}(a)
+
+# ZZ2Vector(a::AbstractVector) = ZZ2Array(a)
+# ZZ2Matrix(a::AbstractMatrix) = ZZ2Array(a)
 
 # TODO: call it zero_matrix ?
 function zeros(::Type{ZZ2}, ii::Integer...)
@@ -182,11 +202,11 @@ function ==(a::ZZ2Array, b::ZZ2Array)
     # @show i1 ii
     for k in 0:prod(ii)-1
         for k1 in 1:l1-1
-	    # @show k1 k
-	    @inbounds ca[i1*k+k1] == cb[i1*k+k1] || return false
-	end
-	# @show k
-	@inbounds ca[i1*k+l1] & m == cb[i1*k+l1] & m || return false
+            # @show k1 k
+            @inbounds ca[i1*k+k1] == cb[i1*k+k1] || return false
+        end
+        # @show k
+        @inbounds ca[i1*k+l1] & m == cb[i1*k+l1] & m || return false
     end
     return true
 end
@@ -216,7 +236,7 @@ function *(a::ZZ2Matrix, b::ZZ2Vector)
     for k in 1:i2
         if isone(b[k])
             addcol!(c, 1, a, k)
-	end
+        end
     end
     c
 end
@@ -229,7 +249,7 @@ function *(a::ZZ2Matrix, b::ZZ2Matrix)
     @inbounds for k2 in 1:j2, k1 in 1:j1
         if isone(b[k1, k2])
             addcol!(c, k2, a, k1)
-	end
+        end
     end
     c
 end
@@ -311,25 +331,25 @@ function _rref!(b::ZZ2Matrix, ::Val{mode}) where mode
                 if j2 != k
                     jj = (j1-1) >> 6 + 1
                     swapcols!(b, j2, k, jj:ii1)
-		    mode == 3 && swapcols!(bi, j2, k)
+                    mode == 3 && swapcols!(bi, j2, k)
                 end
                 for l in (full ? 1 : k+1):i2
                     if (!full || l != k) && isone(b[j1, l])
-		        jj = (j1-1) >> 6 + 1
-		        addcol!(b, l, b, k, jj:ii1)
-		        mode == 3 && addcol!(bi, l, bi, k)
+                        jj = (j1-1) >> 6 + 1
+                        addcol!(b, l, b, k, jj:ii1)
+                        mode == 3 && addcol!(bi, l, bi, k)
                     end
                 end
                 k += 1
-		flag = false
-                break 
+                flag = false
+                break
             end
         end
-	if mode == 2 && flag
-	    return zero(ZZ2)
-	elseif mode == 3 && flag
-	    error("matrix not invertible")
-	end
+        if mode == 2 && flag
+            return zero(ZZ2)
+        elseif mode == 3 && flag
+            error("matrix not invertible")
+        end
     end
     if mode == 2
         return one(ZZ2)
@@ -366,7 +386,7 @@ function randommatrix(i1, i2, k)
     a = zeros(ZZ2, i1, i2)
     for j in 1:k
         j1 = rand(1:i1)
-	j2 = rand(1:i2)
+        j2 = rand(1:i2)
         a[j1, j2] = 1
     end
     a
