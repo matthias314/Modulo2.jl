@@ -9,6 +9,8 @@ import Base: show, ==, +, -, *, /, ^, inv, literal_pow,
 
 using Base: @propagate_inbounds
 
+using Random: AbstractRNG, SamplerType
+
 import LinearAlgebra: dot, det
 
 # otherwise "throw" makes code slower
@@ -65,7 +67,7 @@ function literal_pow(::Type{^}, a::ZZ2, ::Val{N}) where N
     end
 end
 
-rand(::Type{ZZ2}) = ZZ2(rand(Bool))
+rand(rng::AbstractRNG, ::SamplerType{ZZ2}) = ZZ2(rand(rng, Bool))
 
 promote_rule(::Type{<:Integer}, ::Type{ZZ2}) = ZZ2
 
