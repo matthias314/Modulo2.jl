@@ -78,6 +78,9 @@ promote_rule(::Type{Bool}, ::Type{ZZ2}) = ZZ2   # necessary to avoid ambiguities
 # ZZ2Array
 #
 
+using Base: OneTo
+import Base: similar, fill!
+
 struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
     i1::Int
     data::Array{UInt,N}
@@ -109,23 +112,27 @@ end
 
 ZZ2Array(a::AbstractArray{T,N}) where {T,N} = ZZ2Array{N}(a)
 
+function similar(::Type{ZZ2Array{N}},
+        ii::Tuple{Union{Integer, OneTo}, Vararg{Union{Integer,OneTo},N}}) where N
+    ZZ2Array{N}(undef, map(last, ii))
+end
+
+similar(a::A, ::Type{ZZ2}, dims::Union{Int,Tuple{Int,Vararg{Int}}} = size(a)) where A <: ZZ2Array = similar(a, dims)
+similar(a::A, dim::Integer = length(a)) where A <: ZZ2Vector  = similar(A,  (dims,))
+similar(a::A, dims::Tuple = size(a)) where A <: ZZ2Array  = similar(A, dims isa Integer ? (dims,) : dims)
+
 # ZZ2Vector(a::AbstractVector) = ZZ2Array(a)
 # ZZ2Matrix(a::AbstractMatrix) = ZZ2Array(a)
 
-# TODO: call it zero_matrix ?
-function zeros(::Type{ZZ2}, ii::Integer...)
-#     i1 = 4 * ((ii[1] + 1 << 8 - 1) >> 8)
-#     ZZ2Array{length(ii)}(ii[1], zeros(UInt, i1, ii[2:end]...))
-    a = ZZ2Array(undef, ii...)
-    fill!(a.data, UInt(0))
+function fill!(a::ZZ2Array, c)
+    fill!(a.data, iszero(ZZ2(c)) ? UInt(0) : ~UInt(0))
     a
 end
 
-function ones(::Type{ZZ2}, ii::Integer...)
-    a = ZZ2Array(undef, ii...)
-    fill!(a.data, ~UInt(0))
-    a
-end
+zeros(::Type{ZZ2}, ii::Integer...) = fill!(ZZ2Array(undef, ii...), ZZ2(0))
+# TODO: add zero_matrix ?
+
+ones(::Type{ZZ2}, ii::Integer...) = fill!(ZZ2Array(undef, ii...), ZZ2(1))
 
 # TODO: could probably be done more efficiently
 function identity_matrix(::Type{ZZ2}, i1::Integer, i2::Integer = i1)
