@@ -70,6 +70,7 @@ end
 rand(rng::AbstractRNG, ::SamplerType{ZZ2}) = ZZ2(rand(rng, Bool))
 
 promote_rule(::Type{<:Integer}, ::Type{ZZ2}) = ZZ2
+promote_rule(::Type{Bool}, ::Type{ZZ2}) = ZZ2   # necessary to avoid ambiguities
 
 
 
