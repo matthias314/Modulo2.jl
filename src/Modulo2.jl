@@ -142,7 +142,7 @@ size(a::ZZ2Array, d) = d == 1 ? a.i1 : size(a.data, d)
 
 size(a::ZZ2Array) = (a.i1, size(a.data)[2:end]...)
 
-copy(a::ZZ2Array) = ZZ2Array(a.i1, copy(a.data))
+copy(a::ZZ2Array{N}) where N = ZZ2Array{N}(a.i1, copy(a.data))
 
 @inline function _getindex(a::ZZ2Array, ii...)
     @boundscheck checkbounds(a, ii...)
@@ -216,13 +216,13 @@ end
 
 +(a::ZZ2Array) = copy(a)
 
-function +(a::ZZ2Array, b::ZZ2Array)
+function +(a::ZZ2Array{N}, b::ZZ2Array{N}) where N
     ii = size(a)
     jj = size(b)
     ==(ii, jj) || throw(DimensionMismatch("first matrix has dimensions $ii, second matrix has dimensions $jj"))
-    data = Array{UInt}(undef, ii...)
+    data = Array{UInt}(undef, size(a.data))
     data .= a.data .⊻ b.data
-    ZZ2Array(a.i1, data)
+    ZZ2Array{N}(a.i1, data)
 end
 
 -(a::ZZ2Array) = +(a)
