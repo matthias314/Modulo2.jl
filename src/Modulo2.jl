@@ -1,17 +1,12 @@
 module Modulo2
 
-export ZZ2, ZZ2Array, ZZ2Vector, ZZ2Matrix, addcol!, swapcols!,
-    rref!, rref, rank, rank!, det, det!, inv, inv!, dot, identity_matrix
-
 import Base: show, ==, +, -, *, /, ^, inv, literal_pow,
     zero, one, iszero, isone, iseven, isodd, convert, rand, promote_rule,
-    size, zeros, ones, getindex, setindex!, copy, inv, Bool
+    size, zeros, ones, getindex, setindex!, copy, Bool
 
 using Base: @propagate_inbounds
 
 using Random: AbstractRNG, SamplerType
-
-import LinearAlgebra: dot, det
 
 # otherwise "throw" makes code slower
 @noinline throw(e) = Core.throw(e)
@@ -21,6 +16,8 @@ import LinearAlgebra: dot, det
 #
 # ZZ2
 #
+
+export ZZ2
 
 struct ZZ2 <: Number
     m::Bool
@@ -78,8 +75,14 @@ promote_rule(::Type{Bool}, ::Type{ZZ2}) = ZZ2   # necessary to avoid ambiguities
 # ZZ2Array
 #
 
+export ZZ2Array, ZZ2Vector, ZZ2Matrix,
+    addcol!, swapcols!, rref!, rref, rank, rank!,
+    identity_matrix, dot, det, det!, inv!
+
 using Base: OneTo
-import Base: similar, fill!
+import Base: similar, fill!, inv
+
+import LinearAlgebra: dot, det
 
 struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
     i1::Int
@@ -118,11 +121,8 @@ function similar(::Type{ZZ2Array{N}},
 end
 
 similar(a::A, ::Type{ZZ2}, dims::Union{Int,Tuple{Int,Vararg{Int}}} = size(a)) where A <: ZZ2Array = similar(a, dims)
-similar(a::A, dim::Integer = length(a)) where A <: ZZ2Vector  = similar(A,  (dims,))
+similar(a::A, dim::Integer = length(a)) where A <: ZZ2Vector  = similar(A,  (dim,))
 similar(a::A, dims::Tuple = size(a)) where A <: ZZ2Array  = similar(A, dims isa Integer ? (dims,) : dims)
-
-# ZZ2Vector(a::AbstractVector) = ZZ2Array(a)
-# ZZ2Matrix(a::AbstractMatrix) = ZZ2Array(a)
 
 function fill!(a::ZZ2Array, c)
     fill!(a.data, iszero(ZZ2(c)) ? UInt(0) : ~UInt(0))
@@ -226,7 +226,7 @@ end
 function +(a::ZZ2Array{N}, b::ZZ2Array{N}) where N
     ii = size(a)
     jj = size(b)
-    ==(ii, jj) || throw(DimensionMismatch("first matrix has dimensions $ii, second matrix has dimensions $jj"))
+    ii == jj || throw(DimensionMismatch("first array has dimensions $ii, second array has dimensions $jj"))
     data = Array{UInt}(undef, size(a.data))
     data .= a.data .⊻ b.data
     ZZ2Array{N}(a.i1, data)
