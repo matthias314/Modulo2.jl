@@ -80,7 +80,7 @@ export ZZ2Array, ZZ2Vector, ZZ2Matrix,
     identity_matrix, dot, det, det!, inv!
 
 using Base: OneTo
-import Base: similar, fill!, inv
+import Base: copyto!, similar, fill!, inv
 
 import LinearAlgebra: dot, det
 
@@ -150,6 +150,20 @@ size(a::ZZ2Array, d) = d == 1 ? a.i1 : size(a.data, d)
 size(a::ZZ2Array) = (a.i1, size(a.data)[2:end]...)
 
 copy(a::ZZ2Array{N}) where N = ZZ2Array{N}(a.i1, copy(a.data))
+
+function copyto!(a::ZZ2Array, b::ZZ2Array)
+    if a.i1 == b.i1 || (a.i1 == 64*size(a.data, 1) && b.i1 == 64*size(b.data, 1))
+        copyto!(a.data, b.data)
+        a
+    else
+        invoke(copyto!, Tuple{AbstractArray,AbstractArray}, a, b)
+    end
+end
+
+convert(::Type{ZZ2Array{N}}, a::ZZ2Array{N}) where N = a
+
+convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
+    copyto!(ZZ2Array{N}(undef, size(a)), a)
 
 @inline function _getindex(a::ZZ2Array, ii...)
     @boundscheck checkbounds(a, ii...)
@@ -221,22 +235,14 @@ function ==(a::ZZ2Array, b::ZZ2Array)
     return true
 end
 
-+(a::ZZ2Array) = copy(a)
-
 function +(a::ZZ2Array{N}, b::ZZ2Array{N}) where N
     ii = size(a)
     jj = size(b)
     ii == jj || throw(DimensionMismatch("first array has dimensions $ii, second array has dimensions $jj"))
-    data = Array{UInt}(undef, size(a.data))
-    data .= a.data .⊻ b.data
-    ZZ2Array{N}(a.i1, data)
+    c = similar(a)
+    c.data .= a.data .⊻ b.data
+    c
 end
-
--(a::ZZ2Array) = +(a)
-
--(a::ZZ2Array, b::ZZ2Array) = a + b
-
-*(c::ZZ2, a::ZZ2Array) = iszero(c) ? zero(a) : copy(a)
 
 function *(a::ZZ2Matrix, b::ZZ2Vector)
     i1, i2 = size(a)
@@ -406,6 +412,80 @@ function randomarray(ii...)
     N = length(ii)
     i1 = 4 * ((ii[1] + 1 << 8 - 1) >> 8)
     ZZ2Array{N}(ii[1], rand(UInt, i1, ii[2:end]...))
+end
+
+
+
+#
+# broadcasting
+#
+
+import Base: copy, copyto!
+
+using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted
+import Base.Broadcast: BroadcastStyle
+
+struct ZZ2ArrayStyle{N} <: AbstractArrayStyle{N} end
+
+BroadcastStyle(::Type{ZZ2Array{N}}) where N = ZZ2ArrayStyle{N}()
+
+BroadcastStyle(::ZZ2ArrayStyle{N}, ::DefaultArrayStyle{0}) where N = ZZ2ArrayStyle{N}()
+
+similar(bc::Broadcasted{ZZ2ArrayStyle{N}}, ::Type{ZZ2}, dims) where N = similar(ZZ2Array{N}, dims)
+
+function add!(a::ZZ2Array, b::ZZ2Array)
+    if size(a) != size(b)
+        throw(DimensionMismatch("first array has dimensions $(size(a)), second array has dimensions $(size(b))"))
+    end
+    a.data .⊻= b.data
+    a
+end
+
+function add!(a::ZZ2Array{N}, b::AbstractArray{T,N}) where {T,N}
+    for ii in eachindex(a, b)
+        @inbounds a[ii] += b[ii]
+    end
+    a
+end
+
+add!(a::ZZ2Array{N}, bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, <:Union{typeof(+), typeof(-)}}) where N =
+    foldl(add!, bc.args; init = a)
+
+function add!(a::ZZ2Array{N}, bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, typeof(*)}) where N
+    a1, a2 = bc.args
+    iszero(ZZ2(a1)) ? a : add!(a, a2)
+end
+
+copy_convert(a::AbstractArray{T,N}) where {T,N} = convert(ZZ2Array{N}, a)
+copy_convert(a::Union{ZZ2Array,Broadcasted}) = copy(a)
+
+function copy(bc::Broadcasted{<:ZZ2ArrayStyle, <:Any, <:Union{typeof(+), typeof(-)}})
+    if bc.args isa Tuple{ZZ2Array,ZZ2Array}
+        +(bc.args...)
+    else
+        a1, as... = bc.args
+        foldl(add!, as; init = copy_convert(a1))
+    end
+end
+
+function copy(bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, typeof(*)}) where N
+    a1, a2 = bc.args   # a1 is the scalar
+    iszero(ZZ2(a1)) ? fill!(similar(a2, ZZ2), ZZ2(0)) : copy(a2)
+end
+
+function copyto!(a::ZZ2Array{N}, bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, <:Union{typeof(+), typeof(-)}}) where N
+    a1, as... = bc.args
+    foldl(add!, as; init = a === a1 ? a : copyto!(a, a1))
+end
+
+function copyto!(a::ZZ2Array{N}, bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, typeof(*)}) where N
+    a1, a2 = bc.args   # a2 is the scalar
+    if iszero(ZZ2(a2))
+        fill!(a, ZZ2(0))
+    elseif a !== a1
+        copyto!(a, a1)
+    end
+    a
 end
 
 
