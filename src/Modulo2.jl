@@ -219,17 +219,14 @@ function ==(a::ZZ2Array, b::ZZ2Array)
     ii1, ii... = s
     l1 = (ii1-1) >> 6 + 1
     i0 = ii1 & (1 << 6 - 1)
-    m = UInt(1) << (i0+1) - UInt(1)
+    m = UInt(1) << i0 - UInt(1)
     ca = a.data
     cb = b.data
     i1 = size(cb, 1)
-    # @show i1 ii
     for k in 0:prod(ii)-1
         for k1 in 1:l1-1
-            # @show k1 k
             @inbounds ca[i1*k+k1] == cb[i1*k+k1] || return false
         end
-        # @show k
         @inbounds ca[i1*k+l1] & m == cb[i1*k+l1] & m || return false
     end
     return true
