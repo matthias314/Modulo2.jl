@@ -95,6 +95,8 @@ end
 const ZZ2Vector = ZZ2Array{1}
 const ZZ2Matrix = ZZ2Array{2}
 
+ZZ2Array{0}(::UndefInitializer, ii::Tuple{}) = ZZ2Array{0}(-1, Array{UInt,0}(undef))
+
 function ZZ2Array{N}(::UndefInitializer, ii::NTuple{N,Integer}) where N
     i1 = 4 * ((ii[1] + 1 << 8 - 1) >> 8)
     ZZ2Array{N}(ii[1], Array{UInt, N}(undef, i1, ii[2:end]...))
@@ -121,7 +123,8 @@ function similar(::Type{ZZ2Array{N}},
     ZZ2Array{N}(undef, map(last, ii))
 end
 
-similar(a::A, ::Type{ZZ2}, dims::Union{Int,Tuple{Int,Vararg{Int}}} = size(a)) where A <: ZZ2Array = similar(a, dims)
+similar(a::ZZ2Array, ::Type{ZZ2}, dims::Union{Int,Tuple{Int,Vararg{Int}}} = size(a)) = similar(a, dims)
+similar(::ZZ2Array{0}, ::Type{ZZ2}, ::Tuple{} = ()) = similar(ZZ2Array{0}, ())   # needed for correct inference
 similar(a::A, dim::Integer = length(a)) where A <: ZZ2Vector  = similar(A,  (dim,))
 similar(a::A, dims::Tuple = size(a)) where A <: ZZ2Array  = similar(A, dims isa Integer ? (dims,) : dims)
 
@@ -146,8 +149,10 @@ end
 
 zero(a::ZZ2Array) = zeros(ZZ2, size(a)...)
 
+size(a::ZZ2Array{0}, d) = error("dimension out of range")
 size(a::ZZ2Array, d) = d == 1 ? a.i1 : size(a.data, d)
 
+size(a::ZZ2Array{0}) = ()
 size(a::ZZ2Array) = (a.i1, size(a.data)[2:end]...)
 
 copy(a::ZZ2Array{N}) where N = ZZ2Array{N}(a.i1, copy(a.data))
@@ -173,6 +178,8 @@ convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
     i0 = ii1 & (1 << 6 - 1)
     @inbounds ZZ2(a.data[i1, ii[2:end]...] >> i0)
 end
+
+getindex(a::ZZ2Array{0}) = @inbounds ZZ2(a.data[])
 
 @propagate_inbounds function getindex(a::ZZ2Array{N}, ii::Vararg{Int,N}) where N
     @boundscheck checkbounds(a, ii...)
@@ -205,6 +212,11 @@ function _setindex!(a::ZZ2Array, x, ii...)
     x
 end
 
+function setindex!(a::ZZ2Array{0}, x)
+    a.data[] = Bool(ZZ2(x))
+    a
+end
+
 setindex!(a::ZZ2Array{N}, x, ii::Vararg{Int,N}) where N = _setindex!(a, x, ii...)
 
 setindex!(a::ZZ2Vector, x, i::Int) = _setindex!(a, x, i)
@@ -217,6 +229,7 @@ end
 function ==(a::ZZ2Array, b::ZZ2Array)
     s = size(a)
     s == size(b) || return false
+    length(s) == 0 && return a[] == b[]
     ii1, ii... = s
     l1 = (ii1-1) >> 6 + 1
     i0 = ii1 & (1 << 6 - 1)
@@ -241,6 +254,15 @@ function +(a::ZZ2Array{N}, b::ZZ2Array{N}) where N
     c.data .= a.data .⊻ b.data
     c
 end
+
+# without the following methods for +, - and * one gets errors in broadcast_preserving_zero_d
++(a::ZZ2Array) = a
+-(a::ZZ2Array) = a
+
+-(a::ZZ2Array{N}, b::ZZ2Array{N}) where N = a+b
+
+*(c::Number, a::ZZ2Array) = iszero(c) ? zero(a) : copy(a)
+# end of the list
 
 function *(a::ZZ2Matrix, b::ZZ2Vector)
     i1, i2 = size(a)
@@ -407,9 +429,13 @@ function randommatrix(i1, i2, k)
 end
 
 function randomarray(ii...)
-    N = length(ii)
-    i1 = 4 * ((ii[1] + 1 << 8 - 1) >> 8)
-    ZZ2Array{N}(ii[1], rand(UInt, i1, ii[2:end]...))
+    if isempty(ii)
+        fill!(ZZ2Array{0}(undef), rand(ZZ2))
+    else
+        N = length(ii)
+        i1 = 4 * ((ii[1] + 1 << 8 - 1) >> 8)
+        ZZ2Array{N}(ii[1], rand(UInt, i1, ii[2:end]...))
+    end
 end
 
 

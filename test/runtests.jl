@@ -102,6 +102,13 @@ end
 const maxn = 20000
 
 @testset "ZZ2Array add" begin
+    b1 = fill!(ZZ2Array{0}(undef), ZZ2(0))
+    b2 = fill!(ZZ2Array{0}(undef), ZZ2(1))
+    c1 = @inferred b1+b2
+    c2 = @inferred b1-b2
+    @test c1 == c2
+    @test c1[] == c2[] == b1[]+b2[]
+
     for d in 1:4, _ in 1:3
         n = round(Int, maxn^(1/d))
         dims = rand(1:n, d)
@@ -116,6 +123,12 @@ const maxn = 20000
 end
 
 @testset "ZZ2Array mul" begin
+    a = fill!(ZZ2Array{0}(undef), ZZ2(1))
+    c0 = @inferred ZZ2(0)*a
+    c1 = @inferred ZZ2(1)*a
+    @test iszero(c0)
+    @test c1 == a
+
     for d in 1:4, _ in 1:3
         n = round(Int, maxn^(1/d))
         dims = rand(1:n, d)
@@ -130,9 +143,10 @@ end
 @testset "det and inv" begin
     for i in 1:8
         n = round(Int, sqrt(maxn))
-        dim = i <= 3 ? i : rand(1:n)
+        dim = i <= 3 ? i-1 : rand(1:n)
         a = randomarray(dim, dim)
         d = @inferred det(a)
+        dim == 0 && @test isone(d)
         if iszero(d)
             @test_throws Exception inv(a)
         else
@@ -171,22 +185,25 @@ end
 end
 
 @testset "broadcast" begin
-    u = ZZ2Vector([1,1,0])
-    v = ZZ2Vector([1,0,1])
-    w = ZZ2Vector([0,1,1])
-    @test v .+ w == v + w
-    @test u .+ v .+ w == u + v + w
-    @test u .+ (v .+ w) == u + v + w
-    @test (u .+ v) .+ w == u + v + w
-    @test ZZ2(1) .* v == v
-    @test ZZ2(0) .* v == zero(v)
-    @test ZZ2(1) .* (v .+ w) == v + w
-    @test ZZ2(0) .* (v .+ w) == zero(v)
-    @test ZZ2(1) .* v .+ w == v + w
-    @test ZZ2(0) .* v .+ w == w
-    @test v .+ ZZ2(1) .* w == v + w
-    @test v .+ ZZ2(0) .* w == v
-    @test ZZ2(0) .* v .+ ZZ2(1) .* w == w
-    @test ZZ2(1) .* v .+ ZZ2(0) .* w == v
-    @test ZZ2(1) .* (v .+ ZZ2(0) .* w) == v
+    for d in 0:4
+        dims = rand(2:4, d)
+        u = randomarray(dims...)
+        v = randomarray(dims...)
+        w = randomarray(dims...)
+        @test v .+ w == v + w
+        @test u .+ v .+ w == u + v + w
+        @test u .+ (v .+ w) == u + v + w
+        @test (u .+ v) .+ w == u + v + w
+        @test ZZ2(1) .* v == v
+        @test ZZ2(0) .* v == zero(v)
+        @test ZZ2(1) .* (v .+ w) == v + w
+        @test ZZ2(0) .* (v .+ w) == zero(v)
+        @test ZZ2(1) .* v .+ w == v + w
+        @test ZZ2(0) .* v .+ w == w
+        @test v .+ ZZ2(1) .* w == v + w
+        @test v .+ ZZ2(0) .* w == v
+        @test ZZ2(0) .* v .+ ZZ2(1) .* w == w
+        @test ZZ2(1) .* v .+ ZZ2(0) .* w == v
+        @test ZZ2(1) .* (v .+ ZZ2(0) .* w) == v
+    end
 end
