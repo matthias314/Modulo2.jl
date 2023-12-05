@@ -52,17 +52,18 @@ isodd(a::ZZ2) = isone(a)
 *(a::ZZ2, b::ZZ2) = ZZ2(a.m & b.m)
 /(a::ZZ2, b::ZZ2) = iszero(b) ? error("division by zero") : a
 inv(a::ZZ2) = one(ZZ2)/a
-^(a::ZZ2, n::Integer) = n >= 0 ? a : inv(a)
 
-function literal_pow(::Type{^}, a::ZZ2, ::Val{N}) where N
-    if N > 0
+function ^(a::ZZ2, n::Integer)
+    if n > 0
         a
-    elseif N == 0
+    elseif iszero(n)
         one(ZZ2)
     else
         inv(a)
     end
 end
+
+literal_pow(::typeof(^), a::ZZ2, ::Val{N}) where N = a^N
 
 rand(rng::AbstractRNG, ::SamplerType{ZZ2}) = ZZ2(rand(rng, Bool))
 
