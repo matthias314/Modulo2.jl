@@ -493,8 +493,8 @@ function copy(bc::Broadcasted{<:ZZ2ArrayStyle, <:Any, <:Union{typeof(+), typeof(
 end
 
 function copy(bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, typeof(*)}) where N
-    a1, a2 = bc.args   # a1 is the scalar
-    iszero(ZZ2(a1)) ? fill!(similar(a2, ZZ2), ZZ2(0)) : copy(a2)
+    c, b = bc.args[1] isa Number ? bc.args : reverse(bc.args)
+    iszero(ZZ2(c)) ? fill!(similar(b, ZZ2), ZZ2(0)) : copy(b)
 end
 
 function copyto!(a::ZZ2Array{N}, bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, <:Union{typeof(+), typeof(-)}}) where N
@@ -503,11 +503,11 @@ function copyto!(a::ZZ2Array{N}, bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, <:Unio
 end
 
 function copyto!(a::ZZ2Array{N}, bc::Broadcasted{ZZ2ArrayStyle{N}, <:Any, typeof(*)}) where N
-    a1, a2 = bc.args   # a2 is the scalar
-    if iszero(ZZ2(a2))
+    c, b = bc.args[1] isa Number ? bc.args : reverse(bc.args)
+    if iszero(ZZ2(c))
         fill!(a, ZZ2(0))
-    elseif a !== a1
-        copyto!(a, a1)
+    elseif a !== b
+        copyto!(a, b)
     end
     a
 end

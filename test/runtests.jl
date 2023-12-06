@@ -196,8 +196,12 @@ end
         @test (u .+ v) .+ w == u + v + w
         @test ZZ2(1) .* v == v
         @test ZZ2(0) .* v == zero(v)
+        @test v .* ZZ2(1) == v
+        @test v .* ZZ2(0) == zero(v)
         @test ZZ2(1) .* (v .+ w) == v + w
         @test ZZ2(0) .* (v .+ w) == zero(v)
+        @test (v .+ w) .* ZZ2(1) == v + w
+        @test (v .+ w) .* ZZ2(0)  == zero(v)
         @test ZZ2(1) .* v .+ w == v + w
         @test ZZ2(0) .* v .+ w == w
         @test v .+ ZZ2(1) .* w == v + w
@@ -205,5 +209,54 @@ end
         @test ZZ2(0) .* v .+ ZZ2(1) .* w == w
         @test ZZ2(1) .* v .+ ZZ2(0) .* w == v
         @test ZZ2(1) .* (v .+ ZZ2(0) .* w) == v
+
+        x = similar(u)
+        x .= v .+ w
+        @test x == v + w
+        x .= u .+ v .+ w
+        @test x == u + v + w
+        x .= u .+ (v .+ w)
+        @test x == u + v + w
+        x .= (u .+ v) .+ w
+        @test x == u + v + w
+        x .= ZZ2(1) .* v
+        @test x == v
+        x .= ZZ2(0) .* v
+        @test x == zero(v)
+        x .= v .* ZZ2(1)
+        @test x == v
+        x .= v .* ZZ2(0)
+        @test x == zero(v)
+        x .= ZZ2(1) .* (v .+ w)
+        @test x == v + w
+        x .= ZZ2(0) .* (v .+ w)
+        @test x == zero(v)
+        x .= ZZ2(1) .* v .+ w
+        @test x == v + w
+        x .= ZZ2(0) .* v .+ w
+        @test x == w
+        x .= v .+ ZZ2(1) .* w
+        @test x == v + w
+        x .= v .+ ZZ2(0) .* w
+        @test x == v
+        x .= ZZ2(0) .* v .+ ZZ2(1) .* w
+        @test x == w
+        x .= ZZ2(1) .* v .+ ZZ2(0) .* w
+        @test x == v
+        x .= ZZ2(1) .* (v .+ ZZ2(0) .* w)
+        @test x == v
+
+        x = zero(u)
+        x .+= u
+        @test x == u
+        x = zero(u)
+        x .-= u
+        @test x == u
+        x = copy(u)
+        x .*= ZZ2(0)
+        @test iszero(x)
+        x = copy(u)
+        x .*= ZZ2(1)
+        @test x == u
     end
 end
