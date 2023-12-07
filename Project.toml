@@ -1,11 +1,12 @@
 name = "Modulo2"
 uuid = "7e4462cd-8001-4c22-b109-db8e4e581e9c"
 authors = ["matthias314"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+BitIntegers = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
 
 [weakdeps]
 LinearCombinations = "67be3549-475c-46bf-8928-de3404d670d9"

@@ -6,7 +6,7 @@ import Base: show, ==, +, -, *, /, ^, inv, literal_pow,
 
 using Base: @propagate_inbounds
 
-using Random: AbstractRNG, SamplerType
+using Random: rand!, AbstractRNG, SamplerType
 
 # otherwise "throw" makes code slower
 @noinline throw(e) = Core.throw(e)
@@ -83,35 +83,58 @@ export ZZ2Array, ZZ2Vector, ZZ2Matrix,
 using Base: OneTo
 import Base: copyto!, similar, fill!, inv
 
+using BitIntegers
+
+const TA = UInt64
+const TB = UInt256
+const M = sizeof(TB)÷sizeof(TA)
+const BA = 8*sizeof(TA)
+const BB = 8*sizeof(TB)
+const L = trailing_zeros(BA)
+const LB = trailing_zeros(BB)
+
 import LinearAlgebra: dot, det
 
 struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
     i1::Int
-    data::Array{UInt,N}
-    ZZ2Array{N}(i1::Int, data::Array{UInt,N}) where N = new(i1, data)
+    data::Array{TA,N}
+    ZZ2Array{N}(i1::Int, data::Array{TA,N}) where N = new(i1, data)
     # this avoids confusing error messages
+end
+
+zeropad!(a::ZZ2Array{0}) = a
+
+function zeropad!(a::ZZ2Array{N}) where N
+    i1 = a.i1 & (BB-1)
+    i1 == 0 && return a
+    m = TB(1) << i1 - TB(1)
+    data = @view reinterpret(TB, a.data)[end, ntuple(Returns(:), N-1)...]
+    data .&= m
+    a
 end
 
 const ZZ2Vector = ZZ2Array{1}
 const ZZ2Matrix = ZZ2Array{2}
 
-ZZ2Array{0}(::UndefInitializer, ii::Tuple{}) = ZZ2Array{0}(-1, Array{UInt,0}(undef))
+ZZ2Array{0}(::UndefInitializer, ii::Tuple{}; init = true) = ZZ2Array{0}(-1, Array{TA,0}(undef))
 
-function ZZ2Array{N}(::UndefInitializer, ii::NTuple{N,Integer}) where N
-    i1 = 4 * ((ii[1] + 1 << 8 - 1) >> 8)
-    ZZ2Array{N}(ii[1], Array{UInt, N}(undef, i1, ii[2:end]...))
+function ZZ2Array{N}(::UndefInitializer, ii::NTuple{N,Integer}; init = true) where N
+    i1 = M * ((ii[1] + 1 << LB - 1) >> LB)
+    data = Array{TA, N}(undef, i1, ii[2:end]...)
+    init && fill!(view(data, i1-M+1:i1, ntuple(Returns(:), N-1)...), TA(0))
+    ZZ2Array{N}(ii[1], data)
 end
 
-ZZ2Array{N}(::UndefInitializer, ii::Integer...) where N = ZZ2Array{N}(undef, ii)
+ZZ2Array{N}(::UndefInitializer, ii::Integer...; init = true) where N = ZZ2Array{N}(undef, ii; init)
 
-ZZ2Array(::UndefInitializer, ii::NTuple{N,Integer}) where N = ZZ2Array{N}(undef, ii)
+ZZ2Array(::UndefInitializer, ii::NTuple{N,Integer}; init = true) where N = ZZ2Array{N}(undef, ii; init)
 
-ZZ2Array(::UndefInitializer, ii::Integer...) = ZZ2Array(undef, ii)
+ZZ2Array(::UndefInitializer, ii::Integer...; init = true) = ZZ2Array(undef, ii; init)
 
 function ZZ2Array{N}(a::AbstractArray{T,N}) where {T,N}
     b = ZZ2Array(undef, size(a)...)
-    for i in eachindex(a)
-        b[i] = a[i]
+    for i in eachindex(a, b)
+        @inbounds b[i] = a[i]
     end
     b
 end
@@ -129,14 +152,22 @@ similar(a::A, dim::Integer = length(a)) where A <: ZZ2Vector  = similar(A,  (dim
 similar(a::A, dims::Tuple = size(a)) where A <: ZZ2Array  = similar(A, dims isa Integer ? (dims,) : dims)
 
 function fill!(a::ZZ2Array, c)
-    fill!(a.data, iszero(ZZ2(c)) ? UInt(0) : ~UInt(0))
+    c = ZZ2(c)
+    fill!(a.data, iszero(c) ? TA(0) : ~TA(0))
+    isone(c) && zeropad!(a)
     a
 end
 
-zeros(::Type{ZZ2}, ii::Integer...) = fill!(ZZ2Array(undef, ii...), ZZ2(0))
 # TODO: add zero_matrix ?
+function zeros(::Type{ZZ2}, ii::Integer...)
+    a = ZZ2Array(undef, ii; init = false)
+    fill!(a, ZZ2(0))
+end
 
-ones(::Type{ZZ2}, ii::Integer...) = fill!(ZZ2Array(undef, ii...), ZZ2(1))
+function ones(::Type{ZZ2}, ii::Integer...)
+    a = ZZ2Array(undef, ii; init = false)
+    fill!(a, ZZ2(1))
+end
 
 # TODO: could probably be done more efficiently
 function identity_matrix(::Type{ZZ2}, i1::Integer, i2::Integer = i1)
@@ -158,7 +189,7 @@ size(a::ZZ2Array) = (a.i1, size(a.data)[2:end]...)
 copy(a::ZZ2Array{N}) where N = ZZ2Array{N}(a.i1, copy(a.data))
 
 function copyto!(a::ZZ2Array, b::ZZ2Array)
-    if a.i1 == b.i1 || (a.i1 == 64*size(a.data, 1) && b.i1 == 64*size(b.data, 1))
+    if a.i1 == b.i1 || (a.i1 == BA*size(a.data, 1) && b.i1 == BA*size(b.data, 1))
         copyto!(a.data, b.data)
         a
     else
@@ -174,8 +205,8 @@ convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
 @inline function _getindex(a::ZZ2Array, ii...)
     @boundscheck checkbounds(a, ii...)
     ii1 = ii[1]-1
-    i1 = (ii1 >> 6) + 1
-    i0 = ii1 & (1 << 6 - 1)
+    i1 = (ii1 >> L) + 1
+    i0 = ii1 & (1 << L - 1)
     @inbounds ZZ2(a.data[i1, ii[2:end]...] >> i0)
 end
 
@@ -190,7 +221,7 @@ end
 
 function adjust_index(a::ZZ2Array, i)
     (j2, j1) = divrem(i-1, a.i1)
-    j2 * (size(a.data, 1) << 6) + j1 + 1
+    j2 * (size(a.data, 1) << L) + j1 + 1
 end
 
 @propagate_inbounds function getindex(a::ZZ2Array, i::Int)
@@ -201,13 +232,12 @@ end
 
 function _setindex!(a::ZZ2Array, x, ii...)
     ii1 = ii[1]-1
-    i1 = (ii1 >> 6) + 1
-    i0 = ii1 & (1 << 6 - 1)
-    x = ZZ2(x)
-    if iszero(x)
-        a.data[i1, ii[2:end]...] &= bitrotate(~UInt(1), i0)
+    i1 = (ii1 >> L) + 1
+    i0 = ii1 & (1 << L - 1)
+    if iszero(ZZ2(x))
+        a.data[i1, ii[2:end]...] &= ~(TA(1) << i0)
     else
-        a.data[i1, ii[2:end]...] |= UInt(1) << i0
+        a.data[i1, ii[2:end]...] |= TA(1) << i0
     end
     x
 end
@@ -226,33 +256,13 @@ function setindex!(a::ZZ2Array, x, i::Int)
     _setindex!(a, x, adjust_index(a, i))
 end
 
-function ==(a::ZZ2Array, b::ZZ2Array)
-    s = size(a)
-    s == size(b) || return false
-    length(s) == 0 && return a[] == b[]
-    ii1, ii... = s
-    l1 = (ii1-1) >> 6 + 1
-    i0 = ii1 & (1 << 6 - 1)
-    m = UInt(1) << i0 - UInt(1)
-    ca = a.data
-    cb = b.data
-    i1 = size(cb, 1)
-    for k in 0:prod(ii)-1
-        for k1 in 1:l1-1
-            @inbounds ca[i1*k+k1] == cb[i1*k+k1] || return false
-        end
-        @inbounds ca[i1*k+l1] & m == cb[i1*k+l1] & m || return false
-    end
-    return true
-end
+==(a::ZZ2Array, b::ZZ2Array) = a.i1 == b.i1 && a.data == b.data
 
 function +(a::ZZ2Array{N}, b::ZZ2Array{N}) where N
     ii = size(a)
     jj = size(b)
     ii == jj || throw(DimensionMismatch("first array has dimensions $ii, second array has dimensions $jj"))
-    c = similar(a)
-    c.data .= a.data .⊻ b.data
-    c
+    ZZ2Array{N}(a.i1, map(⊻, a.data, b.data))
 end
 
 # without the following methods for +, - and * one gets errors in broadcast_preserving_zero_d
@@ -292,19 +302,10 @@ end
 
 @inline function dot(v::ZZ2Vector, w::ZZ2Vector)
     @boundscheck size(v) != size(w) && throw(DimensionMismatch("vectors must have same length"))
-    s = UInt(0)
-    vc = v.data
-    wc = w.data
-    i1 = size(v, 1)
-    n = (i1 + 1 << 6 - 1) >> 6
-    # TODO: @turbo doesn't work with xor
-    @inbounds for j in 1:n-1
-        s ⊻= vc[j] & wc[j]
+    s = TA(0)
+    for j in eachindex(v.data)
+        @inbounds s ⊻= v.data[j] & w.data[j]
     end
-    mask = ~(~UInt(0) << (i1 & (1 << 6 - 1)))
-    # mask = ~UInt(0) >> ((1 << 6) - i1 & (1 << 6 - 1))
-    # @show mask
-    @inbounds s ⊻= vc[n] & wc[n] & mask
     ZZ2(count_ones(s))
 end
 
@@ -365,13 +366,13 @@ function _rref!(b::ZZ2Matrix, ::Val{mode}) where mode
         for j2 in k:i2
             @inbounds if isone(b[j1, j2])
                 if j2 != k
-                    jj = (j1-1) >> 6 + 1
+                    jj = (j1-1) >> L + 1
                     swapcols!(b, j2, k, jj:ii1)
                     mode == 3 && swapcols!(bi, j2, k)
                 end
                 for l in (full ? 1 : k+1):i2
                     if (!full || l != k) && isone(b[j1, l])
-                        jj = (j1-1) >> 6 + 1
+                        jj = (j1-1) >> L + 1
                         addcol!(b, l, b, k, jj:ii1)
                         mode == 3 && addcol!(bi, l, bi, k)
                     end
@@ -429,13 +430,9 @@ function randommatrix(i1, i2, k)
 end
 
 function randomarray(ii...)
-    if isempty(ii)
-        fill!(ZZ2Array{0}(undef), rand(ZZ2))
-    else
-        N = length(ii)
-        i1 = 4 * ((ii[1] + 1 << 8 - 1) >> 8)
-        ZZ2Array{N}(ii[1], rand(UInt, i1, ii[2:end]...))
-    end
+    a = ZZ2Array(undef, ii; init = false)
+    rand!(a.data)
+    zeropad!(a)
 end
 
 
