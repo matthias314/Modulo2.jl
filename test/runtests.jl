@@ -118,7 +118,7 @@ const maxn = 20000
         b2 = ZZ2Array(a2)
         c1 = @inferred b1+b2
         c2 = @inferred b1-b2
-        @test b1 == a1 && b2 == a2 && c1 == c2 == a1+b2
+        @test b1 == a1 && b2 == a2 && c1 == c2 == a1+a2
     end
 end
 
@@ -180,6 +180,16 @@ end
         @inferred copyto!(a1, b)
         a2 = similar(a1)
         @inferred copyto!(a2, c)
+        @test a1 == a2
+
+        a1 = similar(b, dims...)
+        @inferred copyto!(a1, c)
+        @test c == a1
+
+        a1 = similar(b, reverse(dims)...)
+        @inferred copyto!(a1, c)
+        a2 = similar(a1)
+        copyto!(a2, b)
         @test a1 == a2
     end
 end
