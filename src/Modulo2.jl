@@ -202,7 +202,9 @@ convert(::Type{ZZ2Array{N}}, a::ZZ2Array{N}) where N = a
 convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
     copyto!(ZZ2Array{N}(undef, size(a)), a)
 
-@inline function _getindex(a::ZZ2Array, ii...)
+getindex(a::ZZ2Array{0}) = @inbounds ZZ2(a.data[])
+
+@inline function getindex(a::ZZ2Array{N}, ii::Vararg{Int,N}) where N
     @boundscheck checkbounds(a, ii...)
     ii1 = ii[1]-1
     i1 = (ii1 >> L) + 1
@@ -210,50 +212,23 @@ convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
     @inbounds ZZ2(a.data[i1, ii[2:end]...] >> i0)
 end
 
-getindex(a::ZZ2Array{0}) = @inbounds ZZ2(a.data[])
-
-@propagate_inbounds function getindex(a::ZZ2Array{N}, ii::Vararg{Int,N}) where N
-    @boundscheck checkbounds(a, ii...)
-    _getindex(a, ii...)
-end
-
-@propagate_inbounds getindex(a::ZZ2Vector, i::Int) = _getindex(a, i)
-
-function adjust_index(a::ZZ2Array, i)
-    (j2, j1) = divrem(i-1, a.i1)
-    j2 * (size(a.data, 1) << L) + j1 + 1
-end
-
-@propagate_inbounds function getindex(a::ZZ2Array, i::Int)
-# method for linear indexing
-    @boundscheck checkbounds(a, i)
-    @inbounds _getindex(a, adjust_index(a, i))
-end
-
-function _setindex!(a::ZZ2Array, x, ii...)
-    ii1 = ii[1]-1
-    i1 = (ii1 >> L) + 1
-    i0 = ii1 & (1 << L - 1)
-    if iszero(ZZ2(x))
-        a.data[i1, ii[2:end]...] &= ~(TA(1) << i0)
-    else
-        a.data[i1, ii[2:end]...] |= TA(1) << i0
-    end
-    x
-end
-
 function setindex!(a::ZZ2Array{0}, x)
-    a.data[] = Bool(ZZ2(x))
+    @inbounds a.data[] = Bool(ZZ2(x))
     a
 end
 
-setindex!(a::ZZ2Array{N}, x, ii::Vararg{Int,N}) where N = _setindex!(a, x, ii...)
-
-setindex!(a::ZZ2Vector, x, i::Int) = _setindex!(a, x, i)
-
-function setindex!(a::ZZ2Array, x, i::Int)
-# method for linear indexing
-    _setindex!(a, x, adjust_index(a, i))
+@inline function setindex!(a::ZZ2Array{N}, x, ii::Vararg{Int,N}) where N
+    @boundscheck checkbounds(a, ii...)
+    ii1 = ii[1]-1
+    i1 = (ii1 >> L) + 1
+    i0 = ii1 & (1 << L - 1)
+    m = TA(1) << i0
+    if iszero(ZZ2(x))
+        @inbounds a.data[i1, ii[2:end]...] &= ~m
+    else
+        @inbounds a.data[i1, ii[2:end]...] |= m
+    end
+    a
 end
 
 ==(a::ZZ2Array, b::ZZ2Array) = a.i1 == b.i1 && a.data == b.data
