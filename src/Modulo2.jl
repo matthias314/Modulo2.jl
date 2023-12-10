@@ -102,7 +102,10 @@ struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
     # this avoids confusing error messages
 end
 
-zeropad!(a::ZZ2Array{0}) = a
+function zeropad!(a::ZZ2Array{0})
+    a.data[] &= TA(1)
+    a
+end
 
 function zeropad!(a::ZZ2Array{N}) where N
     i1 = a.i1 & (BB-1)
@@ -116,7 +119,7 @@ end
 const ZZ2Vector = ZZ2Array{1}
 const ZZ2Matrix = ZZ2Array{2}
 
-ZZ2Array{0}(::UndefInitializer, ii::Tuple{}; init = true) = ZZ2Array{0}(-1, Array{TA,0}(undef))
+ZZ2Array{0}(::UndefInitializer, ii::Tuple{}; init = true) = ZZ2Array{0}(-1, zeros(TA))
 
 function ZZ2Array{N}(::UndefInitializer, ii::NTuple{N,Integer}; init = true) where N
     i1 = M * ((ii[1] + 1 << LB - 1) >> LB)
@@ -202,7 +205,7 @@ convert(::Type{ZZ2Array{N}}, a::ZZ2Array{N}) where N = a
 convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
     copyto!(ZZ2Array{N}(undef, size(a)), a)
 
-getindex(a::ZZ2Array{0}) = @inbounds ZZ2(a.data[])
+getindex(a::ZZ2Array{0}) = ZZ2(a.data[])
 
 @inline function getindex(a::ZZ2Array{N}, ii::Vararg{Int,N}) where N
     @boundscheck checkbounds(a, ii...)
@@ -213,7 +216,7 @@ getindex(a::ZZ2Array{0}) = @inbounds ZZ2(a.data[])
 end
 
 function setindex!(a::ZZ2Array{0}, x)
-    @inbounds a.data[] = Bool(ZZ2(x))
+    a.data[] = Bool(ZZ2(x))
     a
 end
 
