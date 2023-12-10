@@ -284,32 +284,29 @@ end
     ZZ2(count_ones(s))
 end
 
-@generated function xor!(p1::Ptr{UInt64}, j1::Int, p2::Ptr{UInt64}, j2::Int, ::Val{W}) where W
-    ir = """
-        %pp1 = inttoptr i64 %0 to <$W x i64>*
-        %p1 = getelementptr inbounds <$W x i64>, <$W x i64>* %pp1, i64 %1
-        %v1 = load <$W x i64>, <$W x i64>* %p1, align 8
-        %pp2 = inttoptr i64 %2 to <$W x i64>*
-        %p2 = getelementptr inbounds <$W x i64>, <$W x i64>* %pp2, i64 %3
-        %v2 = load <$W x i64>, <$W x i64>* %p2, align 8
-        %vr = xor <$W x i64> %v1, %v2
-        store <$W x i64> %vr, <$W x i64>* %p1, align 8
-        ret void
-        """
-    quote
-        Base.llvmcall($ir, Cvoid, Tuple{Ptr{UInt64},Int64,Ptr{UInt64},Int64}, p1, j1, p2, j2)
-    end
+const xor_ir = """
+    %p1 = inttoptr i64 %0 to <$M x i$BA>*
+    %q1 = getelementptr inbounds <$M x i$BA>, <$M x i$BA>* %p1, i64 %1
+    %v1 = load <$M x i$BA>, <$M x i$BA>* %q1, align 8
+    %p2 = inttoptr i64 %2 to <$M x i$BA>*
+    %q2 = getelementptr inbounds <$M x i$BA>, <$M x i$BA>* %p2, i64 %3
+    %v2 = load <$M x i$BA>, <$M x i$BA>* %q2, align 8
+    %vr = xor <$M x i$BA> %v1, %v2
+    store <$M x i$BA> %vr, <$M x i$BA>* %q1, align 8
+    ret void
+"""
+
+function xor!(p1::Ptr{TA}, j1::Int, p2::Ptr{TA}, j2::Int)
+    Base.llvmcall(xor_ir, Cvoid, Tuple{Ptr{TA},Int64,Ptr{TA},Int64}, p1, j1, p2, j2)
 end
 
 function addcol!(a::ZZ2Array, k0::Integer, b::ZZ2Array, k1::Integer, range::AbstractUnitRange = axes(a.data, 1))
-    c = a.data
-    i1 = size(c, 1)
-    j1 = ((k0-1)*i1+first(range)-1) >> 2
-    j2 = ((k1-1)*i1+first(range)-1) >> 2
-    l = (last(range)-first(range)+4) >> 2   # this works because we always go to the end of the column
-    # TODO: think about comment!
+    i1 = size(a.data, 1)
+    j1 = ((k0-1)*i1+first(range)-1) ÷ M
+    j2 = ((k1-1)*i1+first(range)-1) ÷ M
+    l = (length(range)+M-1) ÷ M
     for _ in 0:l-1
-        xor!(pointer(c), j1, pointer(b.data), j2, Val(4))
+        xor!(pointer(a.data), j1, pointer(b.data), j2)
         j1 += 1
         j2 += 1
     end
@@ -324,16 +321,17 @@ function swapcols!(a::ZZ2Array, k0::Integer, k1::Integer, range::AbstractUnitRan
     a
 end
 
-function _rref!(b::ZZ2Matrix, ::Val{mode}) where mode
-# mode == 0: full rref
-# mode == 1: no zeros above leading ones
-# mode == 2: determinant
-# mode == 3: inverse
-    full = mode == 0 || mode == 3
+function gauss!(b::ZZ2Matrix, ::Val{mode}) where mode
+# modes:
+#  :rcef = reduced column echelon form (zeros left of leading ones)
+#  :cef  = column echelon form (no zeros left of leading ones)
+#  :det  = determinant
+#  :inv  = inverse
+    full = mode == :rcef || mode == :inv
     i1, i2 = size(b)
     ii1 = size(b.data, 1)
     k = 1
-    if mode == 3
+    if mode == :inv
         bi = identity_matrix(ZZ2, i1, i2)
     end
     for j1 in 1:i1
@@ -343,13 +341,13 @@ function _rref!(b::ZZ2Matrix, ::Val{mode}) where mode
                 if j2 != k
                     jj = (j1-1) >> L + 1
                     swapcols!(b, j2, k, jj:ii1)
-                    mode == 3 && swapcols!(bi, j2, k)
+                    mode == :inv && swapcols!(bi, j2, k)
                 end
                 for l in (full ? 1 : k+1):i2
                     if (!full || l != k) && isone(b[j1, l])
                         jj = (j1-1) >> L + 1
                         addcol!(b, l, b, k, jj:ii1)
-                        mode == 3 && addcol!(bi, l, bi, k)
+                        mode == :inv && addcol!(bi, l, bi, k)
                     end
                 end
                 k += 1
@@ -357,39 +355,39 @@ function _rref!(b::ZZ2Matrix, ::Val{mode}) where mode
                 break
             end
         end
-        if mode == 2 && flag
-            return zero(ZZ2)
-        elseif mode == 3 && flag
+        if mode == :det && flag
+            return ZZ2(0)
+        elseif mode == :inv && flag
             error("matrix not invertible")
         end
     end
-    if mode == 2
-        return one(ZZ2)
-    elseif mode == 3
+    if mode == :det
+        return ZZ2(1)
+    elseif mode == :inv
         return bi
     else
         return (k-1, b)
     end
 end
 
-rref!(b::ZZ2Matrix; full = true) = _rref!(b, Val(full ? 0 : 1))
+rref!(b::ZZ2Matrix; full = true) = gauss!(b, Val(full ? :rcef : :cef))
 
 rref(b::ZZ2Matrix; kw...) = rref!(b; kw...)
 
-rank!(b::ZZ2Matrix) = _rref!(b, Val(1))[1]
+rank!(b::ZZ2Matrix) = gauss!(b, Val(:cef))[1]
 
 rank(b::ZZ2Matrix) = rank!(copy(b))
 
 function det!(b::ZZ2Matrix)
     ==(size(b)...) || error("matrix not square")
-    _rref!(b, Val(2))
+    gauss!(b, Val(:det))
 end
 
 det(b::ZZ2Matrix) = det!(copy(b))
 
 function inv!(b::ZZ2Matrix)
     ==(size(b)...) || error("matrix not square")
-    _rref!(b, Val(3))
+    gauss!(b, Val(:inv))
 end
 
 inv(b::ZZ2Matrix) = inv!(copy(b))
@@ -490,8 +488,8 @@ end
 # precompilation
 #
 
-for i in 0:3
-    precompile(_rref!, (ZZ2Matrix, Val{i}))
+for i in (:rcef, :cef, :det, :inv)
+    precompile(gauss!, (ZZ2Matrix, Val{i}))
 end
 
 end
