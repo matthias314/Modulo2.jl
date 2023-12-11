@@ -80,7 +80,6 @@ export ZZ2Array, ZZ2Vector, ZZ2Matrix,
     addcol!, swapcols!, rref!, rref, rank, rank!,
     identity_matrix, dot, det, det!, inv!
 
-using Base: OneTo
 import Base: copyto!, similar, fill!, inv
 
 using BitIntegers
@@ -144,15 +143,8 @@ end
 
 ZZ2Array(a::AbstractArray{T,N}) where {T,N} = ZZ2Array{N}(a)
 
-function similar(::Type{ZZ2Array{N}},
-        ii::Tuple{Union{Integer, OneTo}, Vararg{Union{Integer,OneTo},N}}) where N
-    ZZ2Array{N}(undef, map(last, ii))
-end
-
-similar(a::ZZ2Array, ::Type{ZZ2}, dims::Union{Int,Tuple{Int,Vararg{Int}}} = size(a)) = similar(a, dims)
-similar(::ZZ2Array{0}, ::Type{ZZ2}, ::Tuple{} = ()) = similar(ZZ2Array{0}, ())   # needed for correct inference
-similar(a::A, dim::Integer = length(a)) where A <: ZZ2Vector  = similar(A,  (dim,))
-similar(a::A, dims::Tuple = size(a)) where A <: ZZ2Array  = similar(A, dims isa Integer ? (dims,) : dims)
+similar(::Type{<:ZZ2Array}, ::Type{ZZ2}, ii::Dims) = ZZ2Array(undef, ii)
+similar(::ZZ2Array, ::Type{ZZ2}, ii::Dims) = ZZ2Array(undef, ii)
 
 function fill!(a::ZZ2Array, c)
     c = ZZ2(c)
