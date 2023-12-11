@@ -151,7 +151,7 @@ end
             @test_throws Exception inv(a)
         else
             b = @inferred inv(a)
-            @test isone(Matrix(a)*Matrix(b)) && isone(Matrix(b)*Matrix(a))
+            @test isone(a*b)
         end
     end
 end

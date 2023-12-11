@@ -10,6 +10,7 @@ using Random: rand!, AbstractRNG, SamplerType
 
 # otherwise "throw" makes code slower
 @noinline throw(e) = Core.throw(e)
+throw_dim(s) = throw(DimensionMismatch(s))
 
 
 
@@ -97,7 +98,7 @@ import LinearAlgebra: dot, det
 struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
     i1::Int
     data::Array{TA,N}
-    ZZ2Array{N}(i1::Int, data::Array{TA,N}) where N = new(i1, data)
+    ZZ2Array{N}(i1::Integer, data::Array{TA,N}) where N = new(i1, data)
     # this avoids confusing error messages
 end
 
@@ -134,7 +135,7 @@ ZZ2Array(::UndefInitializer, ii::NTuple{N,Integer}; init = true) where N = ZZ2Ar
 ZZ2Array(::UndefInitializer, ii::Integer...; init = true) = ZZ2Array(undef, ii; init)
 
 function ZZ2Array{N}(a::AbstractArray{T,N}) where {T,N}
-    b = ZZ2Array(undef, size(a)...)
+    b = ZZ2Array{N}(undef, size(a))
     for i in eachindex(a, b)
         @inbounds b[i] = a[i]
     end
@@ -154,15 +155,19 @@ function fill!(a::ZZ2Array, c)
 end
 
 # TODO: add zero_matrix ?
-function zeros(::Type{ZZ2}, ii::Integer...)
-    a = ZZ2Array(undef, ii; init = false)
+function zeros(::Type{ZZ2}, ii::NTuple{N,Integer}) where N
+    a = ZZ2Array{N}(undef, ii; init = false)
     fill!(a, ZZ2(0))
 end
 
-function ones(::Type{ZZ2}, ii::Integer...)
-    a = ZZ2Array(undef, ii; init = false)
+zeros(::Type{ZZ2}, ::Tuple{}) = fill!(ZZ2Array{0}(undef; init = false), ZZ2(0))
+
+function ones(::Type{ZZ2}, ii::NTuple{N,Integer}) where N
+    a = ZZ2Array{N}(undef, ii; init = false)
     fill!(a, ZZ2(1))
 end
+
+ones(::Type{ZZ2}, ::Tuple{}) = fill!(ZZ2Array{0}(undef; init = false), ZZ2(1))
 
 # TODO: could probably be done more efficiently
 function identity_matrix(::Type{ZZ2}, i1::Integer, i2::Integer = i1)
@@ -173,7 +178,9 @@ function identity_matrix(::Type{ZZ2}, i1::Integer, i2::Integer = i1)
     a
 end
 
-zero(a::ZZ2Array) = zeros(ZZ2, size(a)...)
+zero(a::ZZ2Array) = zeros(ZZ2, size(a))
+
+one(a::ZZ2Matrix) = identity_matrix(ZZ2, size(a)...)
 
 size(a::ZZ2Array{0}, d) = error("dimension out of range")
 size(a::ZZ2Array, d) = d == 1 ? a.i1 : size(a.data, d)
@@ -231,7 +238,7 @@ end
 function +(a::ZZ2Array{N}, b::ZZ2Array{N}) where N
     ii = size(a)
     jj = size(b)
-    ii == jj || throw(DimensionMismatch("first array has dimensions $ii, second array has dimensions $jj"))
+    ii == jj || throw_dim("first array has dimensions $ii, second array has dimensions $jj")
     ZZ2Array{N}(a.i1, map(⊻, a.data, b.data))
 end
 
@@ -247,12 +254,10 @@ end
 function *(a::ZZ2Matrix, b::ZZ2Vector)
     i1, i2 = size(a)
     j1 = size(b, 1)
-    i2 == j1 || throw(DimensionMismatch("matrix has dimensions ($i1, $i2), vector has length $j1"))
+    i2 == j1 || throw_dim("matrix has dimensions ($i1, $i2), vector has length $j1")
     c = zeros(ZZ2, i1)
     for k in 1:i2
-        if isone(b[k])
-            addcol!(c, 1, a, k)
-        end
+        @inbounds isone(b[k]) && addcol!(c, 1, a, k)
     end
     c
 end
@@ -260,21 +265,19 @@ end
 function *(a::ZZ2Matrix, b::ZZ2Matrix)
     i1, i2 = size(a)
     j1, j2 = size(b)
-    i2 == j1 || throw(DimensionMismatch("first matrix has dimensions ($i1, $i2), second matrix has dimensions ($j1, $j2)"))
+    i2 == j1 || throw_dim("first matrix has dimensions ($i1, $i2), second matrix has dimensions ($j1, $j2)")
     c = zeros(ZZ2, i1, j2)
-    @inbounds for k2 in 1:j2, k1 in 1:j1
-        if isone(b[k1, k2])
-            addcol!(c, k2, a, k1)
-        end
+    for k2 in 1:j2, k1 in 1:j1
+        @inbounds isone(b[k1, k2]) && addcol!(c, k2, a, k1)
     end
     c
 end
 
-@inline function dot(v::ZZ2Vector, w::ZZ2Vector)
-    @boundscheck size(v) != size(w) && throw(DimensionMismatch("vectors must have same length"))
+function dot(a::ZZ2Array, b::ZZ2Array)
+    size(a) == size(b) || throw_dim("vectors/arrays must have the same size")
     s = TA(0)
-    for j in eachindex(v.data)
-        @inbounds s ⊻= v.data[j] & w.data[j]
+    for j in eachindex(a.data)
+        @inbounds s ⊻= a.data[j] & b.data[j]
     end
     ZZ2(count_ones(s))
 end
@@ -295,7 +298,7 @@ function xor!(p1::Ptr{TA}, j1::Int, p2::Ptr{TA}, j2::Int)
     Base.llvmcall(xor_ir, Cvoid, Tuple{Ptr{TA},Int64,Ptr{TA},Int64}, p1, j1, p2, j2)
 end
 
-function addcol!(a::ZZ2Array, k0::Integer, b::ZZ2Array, k1::Integer, range::AbstractUnitRange = axes(a.data, 1))
+@inline function addcol!(a::ZZ2Array, k0::Integer, b::ZZ2Array, k1::Integer, range::AbstractUnitRange = axes(a.data, 1))
     i1 = size(a.data, 1)
     j1 = ((k0-1)*i1+first(range)-1) ÷ M
     j2 = ((k1-1)*i1+first(range)-1) ÷ M
@@ -374,14 +377,14 @@ rank!(b::ZZ2Matrix) = gauss!(b, Val(:cef))[1]
 rank(b::ZZ2Matrix) = rank!(copy(b))
 
 function det!(b::ZZ2Matrix)
-    ==(size(b)...) || error("matrix not square")
+    ==(size(b)...) || throw_dim("matrix is not square")
     gauss!(b, Val(:det))
 end
 
 det(b::ZZ2Matrix) = det!(copy(b))
 
 function inv!(b::ZZ2Matrix)
-    ==(size(b)...) || error("matrix not square")
+    ==(size(b)...) || throw_dim("matrix is not square")
     gauss!(b, Val(:inv))
 end
 
@@ -424,7 +427,7 @@ similar(bc::Broadcasted{ZZ2ArrayStyle{N}}, ::Type{ZZ2}, dims) where N = similar(
 
 function add!(a::ZZ2Array, b::ZZ2Array)
     if size(a) != size(b)
-        throw(DimensionMismatch("first array has dimensions $(size(a)), second array has dimensions $(size(b))"))
+        throw_dim("first array has dimensions $(size(a)), second array has dimensions $(size(b))")
     end
     a.data .⊻= b.data
     a
