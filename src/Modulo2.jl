@@ -20,6 +20,31 @@ throw_dim(s) = throw(DimensionMismatch(s))
 
 export ZZ2
 
+"""
+    ZZ2 <: Number
+
+A type representing integers modulo 2.
+
+Elements can be created from `Bool` or any other `Integer` type or via the functions `zero` and `one`.
+Similarly, `Integer` types are promoted to `ZZ2`.
+
+See also `Base.zero`, `Base.one`, `Base.iszero`, `Base.isone`.
+
+# Examples
+```jldoctest
+julia> ZZ2(1) == one(ZZ2)
+true
+
+julia> iszero(ZZ2(4))
+true
+
+julia> ZZ2(1) + 3
+0
+
+julia> typeof(ans)
+ZZ2
+```
+"""
 struct ZZ2 <: Number
     m::Bool
     ZZ2(m::Bool) = new(m)  # this avoids infinite recursion
@@ -95,6 +120,32 @@ const LB = trailing_zeros(BB)
 
 import LinearAlgebra: dot, det
 
+"""
+    ZZ2Vector <: AbstractVector{ZZ2}
+    ZZ2Matrix <: AbstractMatrix{ZZ2}
+    ZZ2Array{N} <: AbstractArray{ZZ2,N}
+
+An abstract vector / matrix / array type with elements of type `ZZ2`.
+
+The internal representation is packed, meaning that each element only uses one bit.
+However, columns are internally padded to a length that is a multiple of $BB.
+
+A `ZZ2Array` can be created from any `AbstractArray` whose elements can be converted to `ZZ2`.
+One can also leave the elements undefined by using the `undef` argument.
+
+# Examples
+```jldoctest
+julia> ZZ2Matrix([1 2 3; 4 5 6])
+2×3 ZZ2Matrix:
+ 1  0  1
+ 0  1  0
+
+julia> v = ZZ2Vector(undef, 2); v[1] = true; v[2] = 2.0; v
+2-element ZZ2Vector:
+ 1
+ 0
+```
+"""
 struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
     i1::Int
     data::Array{TA,N}
@@ -155,6 +206,11 @@ function fill!(a::ZZ2Array, c)
 end
 
 # TODO: add zero_matrix ?
+"""
+    zeros(ZZ2, ii::NTuple{N,Integer}) where N
+
+Return a `ZZ2Array` of size `ii` with zero entries.
+"""
 function zeros(::Type{ZZ2}, ii::NTuple{N,Integer}) where N
     a = ZZ2Array{N}(undef, ii; init = false)
     fill!(a, ZZ2(0))
@@ -162,6 +218,11 @@ end
 
 zeros(::Type{ZZ2}, ::Tuple{}) = fill!(ZZ2Array{0}(undef; init = false), ZZ2(0))
 
+"""
+    ones(ZZ2, ii::NTuple{N,Integer}) where N
+
+Return a `ZZ2Array` of size `ii` with entries `ZZ2(1)`.
+"""
 function ones(::Type{ZZ2}, ii::NTuple{N,Integer}) where N
     a = ZZ2Array{N}(undef, ii; init = false)
     fill!(a, ZZ2(1))
@@ -368,26 +429,109 @@ function gauss!(b::ZZ2Matrix, ::Val{mode}) where mode
     end
 end
 
+"""
+    rref!(b::ZZ2Matrix; full = true) -> ZZ2Matrix
+
+Return a tuple `(r, c)` where `r` is the rank of `b` and `c` a *column* echelon form of the matrix `b`.
+If `full` is `true`, then the reduced column echelon form is computed.
+The argument may be modified during the computation, which avoids the allocation of a new matrix.
+
+!!! warning
+
+    This function should really be called `rcef!` instead of `rref!`.
+
+See also [`rref`](@ref).
+"""
 rref!(b::ZZ2Matrix; full = true) = gauss!(b, Val(full ? :rcef : :cef))
 
+"""
+    rref(b::ZZ2Matrix; full = true) -> ZZ2Matrix
+
+Return a tuple `(r, c)` where `r` is the rank of `b` and `c` a *column* echelon form of the matrix `b`.
+If `full` is `true`, then the reduced column echelon form is computed.
+
+!!! warning
+
+    This function should really be called `rcef` instead of `rref`.
+
+See also [`rref!`](@ref).
+
+```jldoctest
+julia> a = ZZ2Matrix([1 0 0; 1 1 1])
+2×3 ZZ2Matrix:
+ 1  0  0
+ 1  1  1
+
+julia> rref(a)
+(2, ZZ2[1 0 0; 0 1 0])
+
+julia> rref(a; full = false)
+(2, ZZ2[1 0 0; 1 1 0])
+```
+"""
 rref(b::ZZ2Matrix; kw...) = rref!(copy(b); kw...)
 
+"""
+    rank!(b::ZZ2Matrix) -> Int
+
+Return the rank of the matrix `b`.
+The argument may be modified during the computation, which avoids the allocation of a new matrix.
+
+See also [`rank`](@ref).
+"""
 rank!(b::ZZ2Matrix) = gauss!(b, Val(:cef))[1]
 
+"""
+    rank(b::ZZ2Matrix) -> Int
+
+Return the rank of the matrix `b`.
+
+See also [`rank!`](@ref).
+"""
 rank(b::ZZ2Matrix) = rank!(copy(b))
 
+"""
+    det!(b::ZZ2Matrix) -> ZZ2
+
+Return the determinant of the matrix `b`.
+The argument may be modified during the computation, which avoids the allocation of a new matrix.
+
+See also [`det`](@ref).
+"""
 function det!(b::ZZ2Matrix)
     ==(size(b)...) || throw_dim("matrix is not square")
     gauss!(b, Val(:det))
 end
 
+"""
+    det(b::ZZ2Matrix) -> ZZ2
+
+Return the determinant of the matrix `b`.
+
+See also [`det!`](@ref).
+"""
 det(b::ZZ2Matrix) = det!(copy(b))
 
+"""
+    inv!(b::ZZ2Matrix) -> ZZ2Matrix
+
+Return the inverse of the matrix `b`, which must be invertible.
+The argument may be modified during the computation, which avoids the allocation of a new matrix.
+
+See also [`inv`](@ref).
+"""
 function inv!(b::ZZ2Matrix)
     ==(size(b)...) || throw_dim("matrix is not square")
     gauss!(b, Val(:inv))
 end
 
+"""
+    inv(b::ZZ2Matrix) -> ZZ2Matrix
+
+Return the inverse of the matrix `b`, which must be invertible.
+
+See also [`inv!`](@ref).
+"""
 inv(b::ZZ2Matrix) = inv!(copy(b))
 
 function randommatrix(i1, i2, k)
@@ -400,6 +544,11 @@ function randommatrix(i1, i2, k)
     a
 end
 
+"""
+    randomarray(ii...) -> ZZ2Array
+
+Return a `ZZ2Array` of size `ii` with random entries.
+"""
 function randomarray(ii...)
     a = ZZ2Array(undef, ii; init = false)
     rand!(a.data)
