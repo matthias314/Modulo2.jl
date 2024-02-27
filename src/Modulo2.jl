@@ -370,7 +370,7 @@ end
 
 rref!(b::ZZ2Matrix; full = true) = gauss!(b, Val(full ? :rcef : :cef))
 
-rref(b::ZZ2Matrix; kw...) = rref!(b; kw...)
+rref(b::ZZ2Matrix; kw...) = rref!(copy(b); kw...)
 
 rank!(b::ZZ2Matrix) = gauss!(b, Val(:cef))[1]
 
