@@ -11,10 +11,10 @@ that allows to use the usual arithmetic operations `+` and `*` instead of the lo
 operations `xor` and `&`.
 
 Elements can be created from `Bool` or any other `Integer` type or via the functions `zero` and `one`.
-Similarly, `Integer` types are promoted to `ZZ2`.
+Similarly, `Integer` types are promoted to `ZZ2` when needed.
 
 ### Examples
-```julia-repl
+```julia
 julia> ZZ2(1) == one(ZZ2)
 true
 
@@ -31,7 +31,7 @@ ZZ2
 ## `ZZ2Array`
 
 The type `ZZ2Array{N} <: AbstractArray{ZZ2,N}` represents `N`-dimensional arrays with elements of type `ZZ2`.
-There are the abbreviations `ZZ2Vector <: AbstractVector{ZZ2}` and `ZZ2Matrix <: AbstractMatrix{ZZ2}`.
+There are the usual abbreviations `ZZ2Vector` for `ZZ2Array{1}` and `ZZ2Matrix` for `ZZ2Array{2}`.
 
 The internal representation is packed, meaning that each element only uses one bit.
 However, columns are internally padded to a length that is a multiple of 256.
@@ -40,7 +40,7 @@ A `ZZ2Array` can be created from any `AbstractArray` whose elements can be conve
 One can also leave the elements undefined by using the `undef` argument.
 
 ### Examples
-```julia-repl
+```julia
 julia> ZZ2Matrix([1 2 3; 4 5 6])
 2×3 ZZ2Matrix:
  1  0  1
@@ -53,7 +53,7 @@ julia> v = ZZ2Vector(undef, 2); v[1] = true; v[2] = 2.0; v
 ```
 
 Broadcasting is supported to some extent:
-```julia-repl
+```julia
 julia> a = ZZ2Matrix([1 0 1; 1 1 0])
 2×3 ZZ2Matrix:
  1  0  1
@@ -78,7 +78,7 @@ The package defines functions for (reduced) column echelon form (currently calle
 
 ## Benchmarks
 
-Here we compare Modulo2.jl to
+Below we compare Modulo2.jl to the Julia packages
 [LinearAlgebraX.jl](https://github.com/scheinerman/LinearAlgebraX.jl)
 (with [Mods.jl](https://github.com/scheinerman/Mods.jl) for integers mod 2),
 [AbstractAlgebra.jl](https://github.com/Nemocas/AbstractAlgebra.jl)
@@ -146,3 +146,5 @@ AbstractAlgebra v0.40.1,
 Nemo v0.43.1
 
 Computer: Intel Core i3-10110U CPU @ 2.10GHz with 8GB RAM
+
+The benchmark code can be found in the `benchmark` directory.
