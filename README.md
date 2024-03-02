@@ -72,9 +72,9 @@ julia> a .+= b
 
 ## Functions related to Gaussian elimination
 
-The package defines functions for (reduced) column echelon form (currently called `rref` instead of `rcef`),
+The package defines functions for (reduced) row and column echelon forms (`rref`, `rcef`),
 `rank`, determinant (`det`) and inverses (`inv`). There are also the argument-modifying counterparts
-`rref!`, `rank!`, `det!` and `inv!`. See the docstrings.
+`rcef!`, `rank!`, `det!` and `inv!`. See the docstrings.
 
 ## Benchmarks
 

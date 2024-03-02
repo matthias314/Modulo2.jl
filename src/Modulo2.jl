@@ -103,7 +103,7 @@ promote_rule(::Type{Bool}, ::Type{ZZ2}) = ZZ2   # necessary to avoid ambiguities
 #
 
 export ZZ2Array, ZZ2Vector, ZZ2Matrix,
-    addcol!, swapcols!, rref!, rref, rank, rank!,
+    addcol!, swapcols!, rcef!, rcef, rref, rank, rank!,
     identity_matrix, dot, det, det!, inv!
 
 import Base: copyto!, similar, fill!, inv
@@ -430,52 +430,75 @@ function gauss!(b::ZZ2Matrix, ::Val{mode}) where mode
 end
 
 """
-    rref!(b::ZZ2Matrix; full = true) -> ZZ2Matrix
+    rcef!(b::ZZ2Matrix; reduced = true) -> ZZ2Matrix
 
-Return a tuple `(r, c)` where `r` is the rank of `b` and `c` a *column* echelon form of the matrix `b`.
-If `full` is `true`, then the reduced column echelon form is computed.
-The argument may be modified during the computation, which avoids the allocation of a new matrix.
+Return the tuple `(r, c)` where `r` is the rank of the matrix `b` and `c` a column echelon form of it.
+If `reduced` is `true`, then the reduced column echelon form is computed.
+The argument `b` may be modified during the computation, which avoids the allocation of a new matrix.
 
-!!! warning
-
-    This function should really be called `rcef!` instead of `rref!`.
-
-See also [`rref`](@ref).
+See also [`rcef`](@ref).
 """
-rref!(b::ZZ2Matrix; full = true) = gauss!(b, Val(full ? :rcef : :cef))
+rcef!(b::ZZ2Matrix; reduced = true) = gauss!(b, Val(reduced ? :rcef : :cef))
 
 """
-    rref(b::ZZ2Matrix; full = true) -> ZZ2Matrix
+    rcef(b::ZZ2Matrix; reduced = true) -> ZZ2Matrix
 
-Return a tuple `(r, c)` where `r` is the rank of `b` and `c` a *column* echelon form of the matrix `b`.
-If `full` is `true`, then the reduced column echelon form is computed.
+Return the tuple `(r, c)` where `r` is the rank of the matrix `b` and `c` a column echelon form of it.
+If `reduced` is `true`, then the reduced column echelon form is computed.
 
-!!! warning
+See also [`rref`](@ref), [`rcef!`](@ref).
 
-    This function should really be called `rcef` instead of `rref`.
-
-See also [`rref!`](@ref).
-
+# Examples
 ```jldoctest
 julia> a = ZZ2Matrix([1 0 0; 1 1 1])
 2×3 ZZ2Matrix:
  1  0  0
  1  1  1
 
-julia> rref(a)
+julia> rcef(a)
 (2, ZZ2[1 0 0; 0 1 0])
 
-julia> rref(a; full = false)
+julia> rcef(a; reduced = false)
 (2, ZZ2[1 0 0; 1 1 0])
 ```
 """
-rref(b::ZZ2Matrix; kw...) = rref!(copy(b); kw...)
+rcef(b::ZZ2Matrix; kw...) = rcef!(copy(b); kw...)
+
+"""
+    rref(b::ZZ2Matrix; reduced = true) -> ZZ2Matrix
+
+Return the tuple `(r, c)` where `r` is the rank of the matrix `b` and `c` a row echelon form of it.
+If `reduced` is `true`, then the reduced row echelon form is computed.
+
+Note that it is more efficient to compute a (reduced) *column* echelon form via `rcef`.
+
+See also [`rcef`](@ref).
+
+# Examples
+```jldoctest
+julia> a = ZZ2Matrix([1 1; 0 1; 0 1])
+3×2 ZZ2Matrix:
+ 1  1
+ 0  1
+ 0  1
+
+julia> rref(a)
+(2, ZZ2[1 0; 0 1; 0 0])
+
+julia> rref(a; reduced = false)
+(2, ZZ2[1 1; 0 1; 0 0])
+```
+"""
+function rref(b::ZZ2Matrix; kw...)
+    r, c = rcef!(ZZ2Matrix(transpose(b)); kw...)
+    r, transpose(c)
+end
 
 """
     rank!(b::ZZ2Matrix) -> Int
 
 Return the rank of the matrix `b`.
-The argument may be modified during the computation, which avoids the allocation of a new matrix.
+The argument `b` may be modified during the computation, which avoids the allocation of a new matrix.
 
 See also [`rank`](@ref).
 """
@@ -494,7 +517,7 @@ rank(b::ZZ2Matrix) = rank!(copy(b))
     det!(b::ZZ2Matrix) -> ZZ2
 
 Return the determinant of the matrix `b`.
-The argument may be modified during the computation, which avoids the allocation of a new matrix.
+The argument `b` may be modified during the computation, which avoids the allocation of a new matrix.
 
 See also [`det`](@ref).
 """
@@ -516,7 +539,7 @@ det(b::ZZ2Matrix) = det!(copy(b))
     inv!(b::ZZ2Matrix) -> ZZ2Matrix
 
 Return the inverse of the matrix `b`, which must be invertible.
-The argument may be modified during the computation, which avoids the allocation of a new matrix.
+The argument `b` may be modified during the computation, which avoids the allocation of a new matrix.
 
 See also [`inv`](@ref).
 """
