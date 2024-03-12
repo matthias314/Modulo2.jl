@@ -13,7 +13,7 @@ module Modulo2
 
 import Base: show, ==, +, -, *, /, ^, inv, literal_pow,
     zero, one, iszero, isone, iseven, isodd, convert, rand, promote_rule,
-    size, zeros, ones, getindex, setindex!, copy, Bool
+    size, zeros, ones, getindex, setindex!, copy, Bool, xor, count_ones, count_zeros
 
 using Base: @propagate_inbounds
 
@@ -84,6 +84,7 @@ isodd(a::ZZ2) = isone(a)
 
 +(a::ZZ2) = a
 +(a::ZZ2, b::ZZ2) = ZZ2(xor(a.m, b.m))
+xor(a::ZZ2, b::ZZ2) = a + b # for syntactic consistency
 -(a::ZZ2) = a
 -(a::ZZ2, b::ZZ2) = a + b
 *(a::ZZ2, b::ZZ2) = ZZ2(a.m & b.m)
