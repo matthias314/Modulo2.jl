@@ -13,9 +13,10 @@ module Modulo2
 
 import Base: show, ==, +, -, *, /, ^, inv, literal_pow,
     zero, one, iszero, isone, iseven, isodd, convert, rand, promote_rule,
-    size, zeros, ones, getindex, setindex!, copy, Bool
+    size, zeros, ones, getindex, setindex!, copy, Bool,
+    count_ones, count_zeros
 
-using Base: @propagate_inbounds
+using Base: @propagate_inbounds, BitInteger
 
 using Random: rand!, AbstractRNG, SamplerType
 
@@ -82,6 +83,24 @@ isone(a::ZZ2) = a.m
 iseven(a::ZZ2) = iszero(a)
 isodd(a::ZZ2) = isone(a)
 
+"""
+    count_ones(a::ZZ2) -> Integer
+
+Return `1` if `a` equals `ZZ2(1)` and `0` otherwise.
+
+See also [`count_zeros(::ZZ2)`](@ref), [`count_ones(::ZZ2Array)`](@ref), `count_ones(::Integer)`.
+"""
+count_ones(a::ZZ2) = Int(isodd(a))
+
+"""
+    count_zeros(a::ZZ2) -> Integer
+
+Return `1` if `a` equals `ZZ2(0)` and `0` otherwise.
+
+See also [`count_ones(::ZZ2)`](@ref), [`count_zeros(::ZZ2Array)`](@ref), `count_zeros(::Integer)`.
+"""
+count_zeros(a::ZZ2) = Int(iseven(a))
+
 +(a::ZZ2) = a
 +(a::ZZ2, b::ZZ2) = ZZ2(xor(a.m, b.m))
 -(a::ZZ2) = a
@@ -115,11 +134,14 @@ promote_rule(::Type{Bool}, ::Type{ZZ2}) = ZZ2   # necessary to avoid ambiguities
 
 export ZZ2Array, ZZ2Vector, ZZ2Matrix,
     addcol!, swapcols!, rcef!, rcef, rref, rank, rank!,
-    identity_matrix, dot, det, det!, inv!, mul!
+    identity_matrix, dot, det, det!, inv!, mul!,
+    zz2vector, zz2vector!
 
 import Base: resize!, copyto!, similar, fill!, inv
 
-using BitIntegers
+using BitIntegers: UInt256, AbstractBitSigned, AbstractBitUnsigned
+
+const GeneralBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigned}
 
 const TA = UInt64
 const TB = UInt256
@@ -290,6 +312,50 @@ convert(::Type{ZZ2Array{N}}, a::ZZ2Array{N}) where N = a
 convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
     copyto!(ZZ2Array{N}(undef, size(a)), a)
 
+"""
+    zz2vector(n) -> ZZ2Vector
+
+Return a `ZZ2Vector` containing the bit representation of `n`.
+Here `n` must be a `Base.BitInteger` or a bit integer defined by the package `BitIntegers.jl`.
+
+See also [`zz2vector!`](@ref), `Base.BitInteger`,
+`BitIntegers.AbstractBitSigned`, `BitIntegers.AbstractBitUnsigned`.
+
+# Example
+```jldoctest
+julia> zz2vector(Int8(35))
+8-element ZZ2Vector:
+ 1
+ 1
+ 0
+ 0
+ 0
+ 1
+ 0
+ 0
+```
+"""
+zz2vector(n::T) where T <: GeneralBitInteger = zz2vector!(ZZ2Vector(undef, 8*sizeof(T); init = false), n)
+
+"""
+    zz2vector!(a::ZZ2Vector, n) -> a
+
+Fill `a` with the bit representation of `n` and return `a`.
+Here `n` must be a `Base.BitInteger` or a bit integer defined by the package `BitIntegers.jl`.
+The length of `a` is set to the bit length of `n`.
+
+See also [`zz2vector`](@ref), `Base.BitInteger`,
+`BitIntegers.AbstractBitSigned`, `BitIntegers.AbstractBitUnsigned`.
+"""
+function zz2vector!(a::ZZ2Vector, n::T) where T <: GeneralBitInteger
+    resize!(a, 8*sizeof(T); init = false)
+    for i in 1:length(a.data)
+        @inbounds a.data[i] = n & ~zero(TA)
+        n >>= BA
+    end
+    a
+end
+
 getindex(a::ZZ2Array{0}) = ZZ2(a.data[])
 
 @inline function getindex(a::ZZ2Array{N}, ii::Vararg{Int,N}) where N
@@ -320,6 +386,24 @@ end
 end
 
 ==(a::ZZ2Array, b::ZZ2Array) = a.i1 == b.i1 && a.data == b.data
+
+"""
+    count_ones(a::ZZ2Array) -> Integer
+
+Return the number of elements of `a` equal to `ZZ2(1)`.
+
+See also [`count_zeros(::ZZ2Array)`](@ref), [`count_ones(::ZZ2)`](@ref), `count_ones(::Integer)`.
+"""
+count_ones(a::ZZ2Array) = sum(count_ones, a.data; init = 0)
+
+"""
+    count_zeros(a::ZZ2Array) -> Integer
+
+Return the number of elements of `a` equal to `ZZ2(0)`.
+
+See also [`count_ones(::ZZ2Array)`](@ref), [`count_zeros(::ZZ2)`](@ref), `count_zeros(::Integer)`.
+"""
+count_zeros(a::ZZ2Array) = length(a) - count_ones(a)   # we can't sum over a.data because of the padding
 
 function +(a::ZZ2Array{N}, b::ZZ2Array{N}) where N
     ii = size(a)
