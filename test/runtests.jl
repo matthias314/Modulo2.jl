@@ -270,3 +270,13 @@ end
         @test x == u
     end
 end
+
+@testset "ZZ2 utils" begin
+    for d in 0:4, _ in 1:4
+        dims = rand(2:4, d)
+        x = randomarray(dims...)
+        @test sum(count_ones(b) for b in x) == count_ones(x)
+        @test sum(Int64.(BitArray(x))) == @inferred count_ones(x)
+        @test count_ones(x) + count_zeros(x) == length(x)
+    end
+end
