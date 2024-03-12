@@ -1,4 +1,4 @@
-using Modulo2, Test
+using Modulo2, Test, LinearAlgebra
 
 using Modulo2: randomarray
 
@@ -137,6 +137,21 @@ end
         c1 = @inferred ZZ2(1)*a
         @test iszero(c0)
         @test c1 == a
+    end
+end
+
+@testset "ZZ2Matrix matmul" begin
+    for _ in 1:8
+        L = 100;
+        mat = randomarray(L,L);
+        a = randomarray(L)
+        c = randomarray(L);
+
+        b = mat * a;
+        mul!(c, mat, a);
+        @test b == c
+        mul!(c, mat, a);
+        @test b == c
     end
 end
 

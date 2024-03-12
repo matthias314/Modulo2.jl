@@ -130,7 +130,7 @@ const BB = 8*sizeof(TB)
 const L = trailing_zeros(BA)
 const LB = trailing_zeros(BB)
 
-import LinearAlgebra: dot, det
+import LinearAlgebra: dot, det, mul!
 
 """
     ZZ2Vector <: AbstractVector{ZZ2}
@@ -339,11 +339,13 @@ end
 *(c::Number, a::ZZ2Array) = iszero(c) ? zero(a) : copy(a)
 # end of the list
 
-function *(a::ZZ2Matrix, b::ZZ2Vector)
+*(a::ZZ2Matrix, b::ZZ2Vector) = mul!(ZZ2Vector(undef, size(a,1)), a, b)
+
+function mul!(c::ZZ2Vector, a::ZZ2Matrix, b::ZZ2Vector)
     i1, i2 = size(a)
     j1 = size(b, 1)
-    i2 == j1 || throw_dim("matrix has dimensions ($i1, $i2), vector has length $j1")
-    c = zeros(ZZ2, i1)
+    (i2 == j1 && size(c,1) == i1) || throw_dim("matrix has dimensions ($i1, $i2), vector has length $j1")
+    fill!(c, ZZ2(0)) # otherwise, c <- c ⊻ a & b 
     for k in 1:i2
         @inbounds isone(b[k]) && addcol!(c, 1, a, k)
     end
