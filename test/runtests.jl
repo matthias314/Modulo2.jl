@@ -279,4 +279,12 @@ end
         @test sum(Int64.(BitArray(x))) == @inferred count_ones(x)
         @test count_ones(x) + count_zeros(x) == length(x)
     end
+
+    x = zeros(ZZ2, 64)
+    for T in (UInt8,  UInt16,  UInt32, UInt64), _ in 1:4
+        num = rand(T);
+        fill!(x, ZZ2(0))
+        copyto!(x, num)
+        @test x.data[1] == num       
+    end
 end

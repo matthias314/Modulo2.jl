@@ -272,6 +272,21 @@ function copyto!(a::ZZ2Array, b::ZZ2Array)
     end
 end
 
+"""
+    copyto!(a::ZZ2Vector, num::Integer) 
+
+Copy the bit representation of number `num` into ZZ2Vector `a`
+"""
+function copyto!(a::ZZ2Vector, num::T) where T <: Integer
+    !isbits(num) && throw(ArgumentError("Argument num is not a bits type (BigInt not supported)!"))
+    L = 1 + (sizeof(T) - 1) ÷ sizeof(TA)
+    mask = typemax(TA);
+    @simd for i in 1:L
+        a.data[i] = num & mask
+        num = num >> BA
+    end
+end
+
 convert(::Type{ZZ2Array{N}}, a::ZZ2Array{N}) where N = a
 
 convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
