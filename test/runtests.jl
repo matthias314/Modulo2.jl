@@ -2,6 +2,8 @@ using Modulo2, Test
 
 using Modulo2: randomarray
 
+using BitIntegers
+
 @testset "ZZ2" begin
     @test false == @inferred ZZ2(0)
     @test true == @inferred ZZ2(1)
@@ -333,5 +335,32 @@ end
         x = copy(u)
         x .*= ZZ2(1)
         @test x == u
+    end
+end
+
+@testset "ZZ2 count 1/0" begin
+    for d in 0:4, _ in 1:4
+        dims = rand(0:129, d)
+        x = randomarray(dims...)
+        m = @inferred count_ones(x)
+        @test m == sum(count_ones, x; init = 0)
+        @test m == sum(BitArray(x))
+        @test m + count_zeros(x) == length(x)
+    end
+end
+
+BitIntegers.@define_integers 80
+BitIntegers.@define_integers 800
+
+@testset "zz2vector" begin
+    for T in (UInt8, Int16, UInt64, Int80, UInt256, Int800)
+        n = rand(T)
+        a = @inferred zz2vector(n)
+        m = 8*sizeof(T)
+        @test length(a) == m
+        @test all(a[i+1] == isodd(n >> i) for i in 0:m-1)
+        b = randomarray(111)
+        c = zz2vector!(b, n)
+        @test c === b == a
     end
 end
