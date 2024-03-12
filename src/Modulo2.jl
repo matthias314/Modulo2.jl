@@ -683,8 +683,8 @@ end
 # Utility functions
 #
 
-count_ones(a::ZZ2) = ifelse(a.m, 1, 0)
-count_zero(a::ZZ2) = ifelse(a.m, 0, 1)
+count_ones(a::ZZ2) = Int(isodd(a))
+count_zeros(a::ZZ2) = Int(iseven(a))
 # TODO: use views to not reduce over the padding to multiples of 256?
 count_ones(arr::ZZ2Array) = mapreduce(count_ones, +, arr.data; init = 0)
 count_zeros(arr::ZZ2Array) = length(arr) - count_ones(arr) # Due to padding zeros, can't mapreduce
