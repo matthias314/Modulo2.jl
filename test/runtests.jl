@@ -87,7 +87,7 @@ end
     end
 
     for T in (Int, UInt, Int8, UInt16, Float32, Float64), _ in 1:5
-        x = round(T, 100*rand())
+        x = T(rand(0:100))
         y1 = @inferred ZZ2(x)
         y2 = @inferred convert(ZZ2, x)
         @test y1 == y2 == isodd(x)
