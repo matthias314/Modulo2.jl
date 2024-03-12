@@ -151,6 +151,48 @@ end
     end
 end
 
+@testset "ZZ2Matrix mat-vec mul" begin
+    for n in (0, 1, 100, 257)
+        a = randomarray(n, 2*n)
+        b = randomarray(2*n)
+        c = ones(ZZ2, n)
+
+        ab = Matrix(a) * Vector(b)
+        @test a*b == ab
+
+        mul!(c, a, b, ZZ2(0), ZZ2(1))
+        @test c == ones(ZZ2, n)
+        mul!(c, a, b, ZZ2(0), ZZ2(0))
+        @test iszero(c)
+        mul!(c, a, b)
+        @test c == ab
+        fill!(c, ZZ2(1))
+        mul!(c, a, b, 1, 1)
+        @test c == ab + ones(ZZ2, n)
+    end
+end
+
+@testset "ZZ2Matrix mat-mat mul" begin
+    for n in (0, 1, 100, 255)
+        a = randomarray(n, n+5)
+        b = randomarray(n+5, n+7)
+        c = ones(ZZ2, n, n+7)
+
+        ab = Matrix(a) * Matrix(b)
+        @test a*b == ab
+
+        mul!(c, a, b, ZZ2(0), ZZ2(1))
+        @test c == ones(ZZ2, n, n+7)
+        mul!(c, a, b, ZZ2(0), ZZ2(0))
+        @test iszero(c)
+        mul!(c, a, b)
+        @test c == ab
+        fill!(c, ZZ2(1))
+        mul!(c, a, b, 1, 1)
+        @test c == ab + ones(ZZ2, n, n+7)
+    end
+end
+
 @testset "det and inv" begin
     for i in 1:8
         n = round(Int, sqrt(maxn))

@@ -115,7 +115,7 @@ promote_rule(::Type{Bool}, ::Type{ZZ2}) = ZZ2   # necessary to avoid ambiguities
 
 export ZZ2Array, ZZ2Vector, ZZ2Matrix,
     addcol!, swapcols!, rcef!, rcef, rref, rank, rank!,
-    identity_matrix, dot, det, det!, inv!
+    identity_matrix, dot, det, det!, inv!, mul!
 
 import Base: copyto!, similar, fill!, inv
 
@@ -129,7 +129,7 @@ const BB = 8*sizeof(TB)
 const L = trailing_zeros(BA)
 const LB = trailing_zeros(BB)
 
-import LinearAlgebra: dot, det
+import LinearAlgebra: dot, det, mul!
 
 """
     ZZ2Vector <: AbstractVector{ZZ2}
@@ -323,24 +323,32 @@ end
 *(c::Number, a::ZZ2Array) = iszero(c) ? zero(a) : copy(a)
 # end of the list
 
-function *(a::ZZ2Matrix, b::ZZ2Vector)
+*(a::ZZ2Matrix, b::ZZ2Vector) = mul!(ZZ2Vector(undef, size(a, 1); init = false), a, b)
+
+function mul!(c::ZZ2Vector, a::ZZ2Matrix, b::ZZ2Vector, α::Number = ZZ2(1), β::Number = ZZ2(0))
     i1, i2 = size(a)
     j1 = size(b, 1)
-    i2 == j1 || throw_dim("matrix has dimensions ($i1, $i2), vector has length $j1")
-    c = zeros(ZZ2, i1)
-    for k in 1:i2
-        @inbounds isone(b[k]) && addcol!(c, 1, a, k)
+    (i2 == j1 && size(c, 1) == i1) || throw_dim("matrix has dimensions ($i1, $i2), vector has length $j1")
+    iszero(ZZ2(β)) && fill!(c, ZZ2(0))   # needed since we add columns to c
+    if isone(ZZ2(α))
+        for k in 1:i2
+            @inbounds isone(b[k]) && addcol!(c, 1, a, k)
+        end
     end
     c
 end
 
-function *(a::ZZ2Matrix, b::ZZ2Matrix)
+*(a::ZZ2Matrix, b::ZZ2Matrix) = mul!(ZZ2Array(undef, size(a, 1), size(b, 2); init = false), a, b)
+
+function mul!(c::ZZ2Matrix, a::ZZ2Matrix, b::ZZ2Matrix, α::Number = ZZ2(1), β::Number = ZZ2(0))
     i1, i2 = size(a)
     j1, j2 = size(b)
     i2 == j1 || throw_dim("first matrix has dimensions ($i1, $i2), second matrix has dimensions ($j1, $j2)")
-    c = zeros(ZZ2, i1, j2)
-    for k2 in 1:j2, k1 in 1:j1
-        @inbounds isone(b[k1, k2]) && addcol!(c, k2, a, k1)
+    iszero(ZZ2(β)) && fill!(c, ZZ2(0))   # needed since we add columns to c
+    if isone(ZZ2(α))
+        for k2 in 1:j2, k1 in 1:j1
+            @inbounds isone(b[k1, k2]) && addcol!(c, k2, a, k1)
+        end
     end
     c
 end
