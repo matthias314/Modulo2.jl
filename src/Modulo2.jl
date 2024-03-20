@@ -186,7 +186,7 @@ ZZ2Array{0}(::UndefInitializer, ii::Tuple{}; init = true) = ZZ2Array{0}(-1, zero
 function ZZ2Array{N}(::UndefInitializer, ii::NTuple{N,Integer}; init = true) where N
     i1 = M * ((ii[1] + 1 << LB - 1) >> LB)
     data = Array{TA, N}(undef, i1, ii[2:end]...)
-    init && fill!(view(data, i1-M+1:i1, ntuple(Returns(:), N-1)...), TA(0))
+    init && i1 > 0 && fill!(view(data, i1-M+1:i1, ntuple(Returns(:), N-1)...), TA(0))
     ZZ2Array{N}(ii[1], data)
 end
 
