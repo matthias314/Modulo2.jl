@@ -101,6 +101,17 @@ end
 
 const maxn = 20000
 
+@testset "ZZ2Array" begin
+    for n in 0:3
+        a = ZZ2Array(undef, ntuple(Returns(0), n)...)
+        @test all(iszero, size(a))
+        a = zeros(ZZ2, ntuple(i -> 5*i, n)...)
+        @test iszero(a)
+        a = ones(ZZ2, ntuple(i -> 5*i, n)...)
+        @test all(isone, a)
+    end
+end
+
 @testset "ZZ2Array add" begin
     b1 = fill!(ZZ2Array{0}(undef), ZZ2(0))
     b2 = fill!(ZZ2Array{0}(undef), ZZ2(1))
