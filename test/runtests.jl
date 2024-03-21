@@ -112,6 +112,18 @@ const maxn = 20000
     end
 end
 
+@testset "resize!" begin
+    a = ones(ZZ2, 300)
+    b = Vector(a)
+    resize!(a, 10)
+    @test a == resize!(b, 10)
+    @test length(a.data) == Modulo2.M
+    for i in 1:10
+        a[i] = ZZ2(0)
+    end
+    @test iszero(a.data)
+end
+
 @testset "ZZ2Array add" begin
     b1 = fill!(ZZ2Array{0}(undef), ZZ2(0))
     b2 = fill!(ZZ2Array{0}(undef), ZZ2(1))
