@@ -174,18 +174,22 @@ end
         b = randomarray(2*n)
         c = ones(ZZ2, n)
 
-        ab = Matrix(a) * Vector(b)
-        @test a*b == ab
+        ab0 = Matrix(a) * Vector(b)
+        ab1 = a*b
+        @test ab1 == ab0
+
+        ab2 = a * map(Int∘Bool, b)
+        @test ab2 == ab1 && typeof(ab2) == typeof(ab1)
 
         mul!(c, a, b, ZZ2(0), ZZ2(1))
         @test c == ones(ZZ2, n)
         mul!(c, a, b, ZZ2(0), ZZ2(0))
         @test iszero(c)
         mul!(c, a, b)
-        @test c == ab
+        @test c == ab1
         fill!(c, ZZ2(1))
         mul!(c, a, b, 1, 1)
-        @test c == ab + ones(ZZ2, n)
+        @test c == ab1 + ones(ZZ2, n)
     end
 end
 
@@ -195,18 +199,22 @@ end
         b = randomarray(n+5, n+7)
         c = ones(ZZ2, n, n+7)
 
-        ab = Matrix(a) * Matrix(b)
-        @test a*b == ab
+        ab0 = Matrix(a) * Matrix(b)
+        ab1 = a*b
+        @test ab1 == ab0
+
+        ab2 = a * map(Int∘Bool, b)
+        @test ab2 == ab1 && typeof(ab2) == typeof(ab1)
 
         mul!(c, a, b, ZZ2(0), ZZ2(1))
         @test c == ones(ZZ2, n, n+7)
         mul!(c, a, b, ZZ2(0), ZZ2(0))
         @test iszero(c)
         mul!(c, a, b)
-        @test c == ab
+        @test c == ab1
         fill!(c, ZZ2(1))
         mul!(c, a, b, 1, 1)
-        @test c == ab + ones(ZZ2, n, n+7)
+        @test c == ab1 + ones(ZZ2, n, n+7)
     end
 end
 

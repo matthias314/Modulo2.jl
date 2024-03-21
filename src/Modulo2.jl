@@ -434,47 +434,49 @@ end
 *(c::Number, a::ZZ2Array) = iszero(c) ? zero(a) : copy(a)
 # end of the list
 
-*(a::ZZ2Matrix, b::ZZ2Vector) = mul!(ZZ2Vector(undef, size(a, 1); init = false), a, b)
+*(a::ZZ2Matrix, b::AbstractVector{<:Number}) = mul!(ZZ2Vector(undef, size(a, 1); init = false), a, b)
 
 """
-    mul!(c::ZZ2Vector, a::ZZ2Matrix, b::ZZ2Vector, α::Number = ZZ2(1), β::Number = ZZ2(0)) -> c
+    mul!(c::ZZ2Vector, a::ZZ2Matrix, b::AbstractVector{<:Number}, α::Number = ZZ2(1), β::Number = ZZ2(0)) -> c
 
 Store the combined matrix-vector multiply-add `α a*b + β c` in `c` and return `c`.
 With the default values of `α` and `β` the product `a*b` is computed.
+The elements of `b` as well as `α` and `β` must be convertible to `ZZ2`.
 
 This function is re-exported from the module `LinearAlgebra`.
 """
-function mul!(c::ZZ2Vector, a::ZZ2Matrix, b::ZZ2Vector, α::Number = ZZ2(1), β::Number = ZZ2(0))
+function mul!(c::ZZ2Vector, a::ZZ2Matrix, b::AbstractVector{<:Number}, α::Number = ZZ2(1), β::Number = ZZ2(0))
     i1, i2 = size(a)
     j1 = size(b, 1)
     (i2 == j1 && size(c, 1) == i1) || throw_dim("matrix has dimensions ($i1, $i2), vector has length $j1")
     iszero(ZZ2(β)) && fill!(c, ZZ2(0))   # needed since we add columns to c
     if isone(ZZ2(α))
         for k in 1:i2
-            @inbounds isone(b[k]) && addcol!(c, 1, a, k)
+            @inbounds isone(ZZ2(b[k])) && addcol!(c, 1, a, k)
         end
     end
     c
 end
 
-*(a::ZZ2Matrix, b::ZZ2Matrix) = mul!(ZZ2Array(undef, size(a, 1), size(b, 2); init = false), a, b)
+*(a::ZZ2Matrix, b::AbstractMatrix{<:Number}) = mul!(ZZ2Array(undef, size(a, 1), size(b, 2); init = false), a, b)
 
 """
-    mul!(c::ZZ2Matrix, a::ZZ2Matrix, b::ZZ2Matrix, α::Number = ZZ2(1), β::Number = ZZ2(0)) -> c
+    mul!(c::ZZ2Matrix, a::ZZ2Matrix, b::AbstractMatrix{<:Number}, α::Number = ZZ2(1), β::Number = ZZ2(0)) -> c
 
 Store the combined matrix-matrix multiply-add `α a*b + β c` in `c` and return `c`.
 With the default values of `α` and `β` the product `a*b` is computed.
+The elements of `b` as well as `α` and `β` must be convertible to `ZZ2`.
 
 This function is re-exported from the module `LinearAlgebra`.
 """
-function mul!(c::ZZ2Matrix, a::ZZ2Matrix, b::ZZ2Matrix, α::Number = ZZ2(1), β::Number = ZZ2(0))
+function mul!(c::ZZ2Matrix, a::ZZ2Matrix, b::AbstractMatrix{<:Number}, α::Number = ZZ2(1), β::Number = ZZ2(0))
     i1, i2 = size(a)
     j1, j2 = size(b)
     i2 == j1 || throw_dim("first matrix has dimensions ($i1, $i2), second matrix has dimensions ($j1, $j2)")
     iszero(ZZ2(β)) && fill!(c, ZZ2(0))   # needed since we add columns to c
     if isone(ZZ2(α))
         for k2 in 1:j2, k1 in 1:j1
-            @inbounds isone(b[k1, k2]) && addcol!(c, k2, a, k1)
+            @inbounds isone(ZZ2(b[k1, k2])) && addcol!(c, k2, a, k1)
         end
     end
     c
