@@ -6,8 +6,7 @@ It defines a type `ZZ2` for integers mod 2 and
 `ZZ2Array` (`ZZ2Vector`, `ZZ2Matrix`) for arrays (vectors, matrices)
 with elements in `ZZ2`.
 
-See also [`ZZ2`](@ref), [`ZZ2Array`](@ref), [`det`](@ref), [`inv`](@ref),
-[`rank`](@ref), [`rcef`](@ref), [`rref`](@ref).
+See also [`ZZ2`](@ref), [`ZZ2Array`](@ref).
 """
 module Modulo2
 
@@ -37,17 +36,19 @@ export ZZ2
 
 A type representing integers modulo 2.
 
-Elements can be created from `Bool` or any other `Integer` type or via the functions `zero` and `one`.
-Similarly, `Integer` types are promoted to `ZZ2`.
+Elements can be created via the functions `zero` and `one` or
+from an argument of type `Bool` or any other `Integer` type.
+More generally, any argument accepted by `isodd` can be converted to `ZZ2`.
+In algebraic computations with `ZZ2`, `Integer` types are promoted to `ZZ2`.
 
-See also `Base.zero`, `Base.one`, `Base.iszero`, `Base.isone`.
+See also `Base.zero`, `Base.one`, `Base.iszero`, `Base.isone`, `Base.isodd`.
 
 # Examples
 ```jldoctest
 julia> ZZ2(1) == one(ZZ2)
 true
 
-julia> iszero(ZZ2(4))
+julia> iszero(ZZ2(4.0))
 true
 
 julia> ZZ2(1) + 3
@@ -166,6 +167,9 @@ However, columns are internally padded to a length that is a multiple of $BB.
 A `ZZ2Array` can be created from any `AbstractArray` whose elements can be converted to `ZZ2`.
 One can also leave the elements undefined by using the `undef` argument.
 
+See also [`zeros`](@ref), [`ones`](@ref), [`zz2vector`](@ref), [`resize!`](@ref),
+[`det`](@ref), [`inv`](@ref), [`rank`](@ref), [`rcef`](@ref), [`rref`](@ref).
+
 # Examples
 ```jldoctest
 julia> ZZ2Matrix([1 2 3; 4 5 6])
@@ -191,6 +195,14 @@ function zeropad!(a::ZZ2Array{0})
     a
 end
 
+"""
+    $(@__MODULE__).zeropad!(a::ZZ2Array{N}) where N -> a
+
+Set the padding bits in the underlying array `a.data` to zero and return `a`.
+The visible bits are not modified.
+
+This is an internal function of the module.
+"""
 function zeropad!(a::ZZ2Array{N}) where N
     i1 = a.i1 & (BB-1)
     i1 == 0 && return a
@@ -423,6 +435,14 @@ end
 
 *(a::ZZ2Matrix, b::ZZ2Vector) = mul!(ZZ2Vector(undef, size(a, 1); init = false), a, b)
 
+"""
+    mul!(c::ZZ2Vector, a::ZZ2Matrix, b::ZZ2Vector, α::Number = ZZ2(1), β::Number = ZZ2(0)) -> c
+
+Store the combined matrix-vector multiply-add `α a*b + β c` in `c` and return `c`.
+With the default values of `α` and `β` the product `a*b` is computed.
+
+This function is re-exported from the module `LinearAlgebra`.
+"""
 function mul!(c::ZZ2Vector, a::ZZ2Matrix, b::ZZ2Vector, α::Number = ZZ2(1), β::Number = ZZ2(0))
     i1, i2 = size(a)
     j1 = size(b, 1)
@@ -438,6 +458,14 @@ end
 
 *(a::ZZ2Matrix, b::ZZ2Matrix) = mul!(ZZ2Array(undef, size(a, 1), size(b, 2); init = false), a, b)
 
+"""
+    mul!(c::ZZ2Matrix, a::ZZ2Matrix, b::ZZ2Matrix, α::Number = ZZ2(1), β::Number = ZZ2(0)) -> c
+
+Store the combined matrix-matrix multiply-add `α a*b + β c` in `c` and return `c`.
+With the default values of `α` and `β` the product `a*b` is computed.
+
+This function is re-exported from the module `LinearAlgebra`.
+"""
 function mul!(c::ZZ2Matrix, a::ZZ2Matrix, b::ZZ2Matrix, α::Number = ZZ2(1), β::Number = ZZ2(0))
     i1, i2 = size(a)
     j1, j2 = size(b)
@@ -497,6 +525,19 @@ function swapcols!(a::ZZ2Array, k0::Integer, k1::Integer, range::AbstractUnitRan
     a
 end
 
+"""
+    $(@__MODULE__).gauss!(a::ZZ2Matrix, ::Val{mode}) where mode
+
+* If `mode == :rcef`, return `(r, b)` where `r` is the rank of `a`
+  and `b` its reduced column echelon form.
+* If `mode == :cef`, return `(r, b)` where `r` is the rank of `a`
+  and `b` a column echelon form of it.
+* If `mode == :det`, return the determinant of `a`.
+* If `mode == :inv`, return the inverse of `a`.
+
+In all cases, the matrix `a` may be modified during the computation.
+This is an internal function of the module.
+"""
 function gauss!(b::ZZ2Matrix, ::Val{mode}) where mode
 # modes:
 #  :rcef = reduced column echelon form (zeros left of leading ones)
@@ -685,7 +726,7 @@ function randommatrix(i1, i2, k)
 end
 
 """
-    randomarray(ii...) -> ZZ2Array
+    $(@__MODULE__).randomarray(ii...) -> ZZ2Array
 
 Return a `ZZ2Array` of size `ii` with random entries.
 """
