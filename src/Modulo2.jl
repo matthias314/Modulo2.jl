@@ -218,6 +218,7 @@ const ZZ2Matrix = ZZ2Array{2}
 ZZ2Array{0}(::UndefInitializer, ii::Tuple{}; init = true) = ZZ2Array{0}(-1, zeros(TA))
 
 function ZZ2Array{N}(::UndefInitializer, ii::NTuple{N,Integer}; init = true) where N
+    any(<(0), ii) && error("invalid array dimensions")
     i1 = M * ((ii[1] + 1 << LB - 1) >> LB)
     data = Array{TA, N}(undef, i1, ii[2:end]...)
     a = ZZ2Array{N}(ii[1], data)

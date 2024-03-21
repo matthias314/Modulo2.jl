@@ -105,6 +105,9 @@ const maxn = 20000
 
 @testset "ZZ2Array" begin
     for n in 0:3
+        if n > 0
+            @test_throws Exception ZZ2Array(undef, ntuple(Returns(2), n-1)..., -1)
+        end
         a = ZZ2Array(undef, ntuple(Returns(0), n)...)
         @test all(iszero, size(a))
         a = zeros(ZZ2, ntuple(i -> 5*i, n)...)
