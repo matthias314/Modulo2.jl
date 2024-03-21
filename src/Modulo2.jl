@@ -117,7 +117,7 @@ export ZZ2Array, ZZ2Vector, ZZ2Matrix,
     addcol!, swapcols!, rcef!, rcef, rref, rank, rank!,
     identity_matrix, dot, det, det!, inv!, mul!
 
-import Base: copyto!, similar, fill!, inv
+import Base: resize!, copyto!, similar, fill!, inv
 
 using BitIntegers
 
@@ -157,9 +157,9 @@ julia> v = ZZ2Vector(undef, 2); v[1] = true; v[2] = 2.0; v
  0
 ```
 """
-struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
+mutable struct ZZ2Array{N} <: AbstractArray{ZZ2,N}
     i1::Int
-    data::Array{TA,N}
+    const data::Array{TA,N}
     ZZ2Array{N}(i1::Integer, data::Array{TA,N}) where N = new(i1, data)
     # this avoids confusing error messages
 end
@@ -208,6 +208,20 @@ ZZ2Array(a::AbstractArray{T,N}) where {T,N} = ZZ2Array{N}(a)
 
 similar(::Type{<:ZZ2Array}, ::Type{ZZ2}, ii::Dims) = ZZ2Array(undef, ii)
 similar(::ZZ2Array, ::Type{ZZ2}, ii::Dims) = ZZ2Array(undef, ii)
+
+"""
+    resize!(a::ZZ2Vector, n::Integer) -> a
+
+Change the length of `a` to `n` and return `a`.
+In case `a` is enlarged, the new entries are undefined.
+"""
+function resize!(a::ZZ2Vector, n::Integer; init = true)
+    n >= 0 || error("new length must be ≥ 0")
+    i1 = M * ((n + 1 << LB - 1) >> LB)
+    i1 == length(a.data) || resize!(a.data, i1)
+    a.i1 = n
+    init ? zeropad!(a) : a
+end
 
 function fill!(a::ZZ2Array, c)
     c = ZZ2(c)
