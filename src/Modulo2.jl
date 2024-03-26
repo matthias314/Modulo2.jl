@@ -152,7 +152,7 @@ const BB = 8*sizeof(TB)
 const L = trailing_zeros(BA)
 const LB = trailing_zeros(BB)
 
-import LinearAlgebra: dot, det, mul!
+import LinearAlgebra: dot, rank, det, mul!
 
 """
     ZZ2Vector <: AbstractVector{ZZ2}
