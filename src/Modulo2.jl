@@ -243,6 +243,8 @@ function ZZ2Array{N}(a::AbstractArray{T,N}) where {T,N}
     b
 end
 
+ZZ2Array{N}(a::ZZ2Array{N}) where N = copy(a)
+
 ZZ2Array(a::AbstractArray{T,N}) where {T,N} = ZZ2Array{N}(a)
 
 similar(::Type{<:ZZ2Array}, ::Type{ZZ2}, ii::Dims) = ZZ2Array(undef, ii)
@@ -326,8 +328,26 @@ end
 
 convert(::Type{ZZ2Array{N}}, a::ZZ2Array{N}) where N = a
 
-convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} =
-    copyto!(ZZ2Array{N}(undef, size(a)), a)
+convert(::Type{ZZ2Array{N}}, a::AbstractArray{T,N}) where {T,N} = ZZ2Array{N}(a)
+
+convert(::Type{ZZ2Array}, a::AbstractArray{T,N}) where {T,N} = convert(ZZ2Array{N}, a)
+
+# conversion to and from BitVector
+
+function ZZ2Vector(v::BitVector)
+    m = length(v)
+    i1 = M * ((m + 1 << LB - 1) >> LB)
+    w = Vector{TA}(undef, i1)
+    unsafe_copyto!(w, 1, v.chunks, 1, i1)
+    zeropad!(ZZ2Vector(m, w))
+end
+
+function BitVector(v::ZZ2Vector)
+    m = length(v)
+    w = BitVector(undef, m)
+    unsafe_copyto!(w.chunks, 1, v.data, 1, Base.num_bit_chunks(m))
+    w
+end
 
 """
     zz2vector(n) -> ZZ2Vector

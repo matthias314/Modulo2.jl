@@ -131,6 +131,24 @@ end
     @test iszero(a.data)
 end
 
+@testset "ZZ2Array convert" begin
+    for n in 0:3
+        a = rand(Bool, ntuple(Returns(3), n))
+        b = @inferred ZZ2Array(a)
+        @test b == a
+        c = @inferred ZZ2Array(b)
+        @test c == b && c !== b
+        b = @inferred convert(ZZ2Array, a)
+        @test b == a
+        @test convert(ZZ2Array, b) === b
+    end
+    a = BitVector(rand(Bool, 520))
+    b = @inferred ZZ2Vector(a)
+    @test b == a
+    c = @inferred BitVector(b)
+    @test c == a
+end
+
 @testset "ZZ2Array add" begin
     b1 = fill!(ZZ2Array{0}(undef), ZZ2(0))
     b2 = fill!(ZZ2Array{0}(undef), ZZ2(1))
