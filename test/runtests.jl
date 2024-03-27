@@ -4,6 +4,8 @@ using Modulo2: randomarray
 
 using BitIntegers
 
+using AbstractAlgebra: AbstractAlgebra, GF, matrix
+
 @testset "ZZ2" begin
     @test false == @inferred ZZ2(0)
     @test true == @inferred ZZ2(1)
@@ -215,6 +217,23 @@ end
         fill!(c, ZZ2(1))
         mul!(c, a, b, 1, 1)
         @test c == ab1 + ones(ZZ2, n, n+7)
+    end
+end
+
+@testset "rcef, rref, rank" begin
+    for m in (0, 1, 257, 511), n in (0, 1, 255, 513)
+        a1 = Modulo2.randommatrix(m, n, round(Int, 10*sqrt(m*n)))
+        a2 = matrix(GF(2), map(isone, a1))
+        # rref & rank
+        r1, b1 = rref(a1)
+        r2, b2 = AbstractAlgebra.rref(a2)
+        @test r1 == r2 == rank(a1)
+        @test map(isone, b1) == map(isone, Matrix(b2))
+        # cref
+        r1, b1 = rcef(a1)
+        r2, b2 = AbstractAlgebra.rref(transpose(a2))
+        @test r1 == r2
+        @test map(isone, b1) == map(isone, transpose(Matrix(b2)))
     end
 end
 
