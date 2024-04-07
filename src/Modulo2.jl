@@ -338,7 +338,7 @@ function ZZ2Vector(v::BitVector)
     m = length(v)
     i1 = M * ((m + 1 << LB - 1) >> LB)
     w = Vector{TA}(undef, i1)
-    unsafe_copyto!(w, 1, v.chunks, 1, i1)
+    unsafe_copyto!(w, 1, v.chunks, 1, length(v.chunks))
     zeropad!(ZZ2Vector(m, w))
 end
 
