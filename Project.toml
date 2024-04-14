@@ -1,7 +1,7 @@
 name = "Modulo2"
 uuid = "7e4462cd-8001-4c22-b109-db8e4e581e9c"
 authors = ["matthias314"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
