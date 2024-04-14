@@ -515,7 +515,15 @@ function dot(a::ZZ2Array, b::ZZ2Array)
     ZZ2(count_ones(s))
 end
 
-const xor_ir = """
+const xor_ir = VERSION > v"1.12-" ? """
+    %q1 = getelementptr inbounds <$M x i$BA>, ptr %0, i64 %1
+    %v1 = load <$M x i$BA>, ptr %q1, align 8
+    %q2 = getelementptr inbounds <$M x i$BA>, ptr %2, i64 %3
+    %v2 = load <$M x i$BA>, ptr %q2, align 8
+    %vr = xor <$M x i$BA> %v1, %v2
+    store <$M x i$BA> %vr, ptr %q1, align 8
+    ret void
+""" : """
     %p1 = inttoptr i64 %0 to <$M x i$BA>*
     %q1 = getelementptr inbounds <$M x i$BA>, <$M x i$BA>* %p1, i64 %1
     %v1 = load <$M x i$BA>, <$M x i$BA>* %q1, align 8
