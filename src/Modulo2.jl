@@ -342,7 +342,7 @@ function ZZ2Vector(v::BitVector)
     zeropad!(ZZ2Vector(m, w))
 end
 
-function BitVector(v::ZZ2Vector)
+function Base.BitVector(v::ZZ2Vector)
     m = length(v)
     w = BitVector(undef, m)
     unsafe_copyto!(w.chunks, 1, v.data, 1, Base.num_bit_chunks(m))
