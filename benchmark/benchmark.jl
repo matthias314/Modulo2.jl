@@ -1,6 +1,10 @@
-using BenchmarkTools
+using Chairmarks
 
-prettytime(t) = BenchmarkTools.prettytime(t*10e9)
+function prettytime(sample)
+    io = IOBuffer()
+    Chairmarks.print_time(io, sample.time)
+    String(take!(io))
+end
 
 using Modulo2
 
@@ -22,30 +26,30 @@ s = """
 for n in v
     a0 = rand(Bool, n, n)
     b0 = rand(Bool, n, n)
-    
+
     t1 = let a1 = ZZ2Matrix(a0), b1 = ZZ2Matrix(b0)
-        prettytime(@belapsed $a1 * $b1)
+        prettytime(@b $a1 * $b1)
     end
     if n <= 1000
         t2 = let a2 = map(ZZ2, a0), b2 = map(ZZ2, b0)
-            prettytime(@belapsed $a2 * $b2)
+            prettytime(@b $a2 * $b2)
         end
     else
         t2 = skipped
     end
     if n <= 500
         t3 = let a3 = matrix(R3, a0), b3 = matrix(R3, b0)
-            prettytime(@belapsed $a3 * $b3)
+            prettytime(@b $a3 * $b3)
         end
     else
         t3 = skipped
     end
     t4 = let a4 = matrix(R4, a0), b4 = matrix(R4, b0)
-        prettytime(@belapsed $a4 * $b4)
+        prettytime(@b $a4 * $b4)
     end
 
     s0 = "| $n | $t1 | $t2 | $t3 | $t4 |\n"
-    
+
     print(stderr, s0)
     s *= s0
 end
@@ -63,28 +67,28 @@ for n in v
     a0 = rand(Bool, n, n)
 
     t1 = let a1 = ZZ2Matrix(a0)
-        prettytime(@belapsed Modulo2.rank($a1))
+        prettytime(@b Modulo2.rank($a1))
     end
     if n <= 500
         t2 = let a2 = map(R2, a0)
-            prettytime(@belapsed rankx($a2))
+            prettytime(@b rankx($a2))
         end
     else
         t2 = skipped
     end
     if n <= 500
         t3 = let a3 = matrix(R3, a0)
-            prettytime(@belapsed AbstractAlgebra.rank($a3))
+            prettytime(@b AbstractAlgebra.rank($a3))
         end
     else
         t3 = skipped
     end
     t4 = let a4 = matrix(R4, a0)
-        prettytime(@belapsed AbstractAlgebra.rank($a4))
+        prettytime(@b AbstractAlgebra.rank($a4))
     end
-    
+
     s0 = "| $n | $t1 | $t2 | $t3 | $t4 |\n"
-    
+
     print(stderr, s0)
     s *= s0
 end
@@ -106,21 +110,21 @@ for n in v
     a3 = matrix(R3, a0)
     a4 = matrix(R4, a0)
 
-    t1 = prettytime(@belapsed det($a1))
+    t1 = prettytime(@b det($a1))
     if n <= 1000
-        t2 = prettytime(@belapsed detx($a2))
+        t2 = prettytime(@b detx($a2))
     else
         t2 = skipped
     end
     if n <= 500
-        t3 = prettytime(@belapsed det($a3))
+        t3 = prettytime(@b det($a3))
     else
         t3 = skipped
     end
-    t4 = prettytime(@belapsed det($a4))
-    
+    t4 = prettytime(@b det($a4))
+
     s0 = "| $n | $t1 | $t2 | $t3 | $t4 |\n"
-    
+
     print(stderr, s0)
     s *= s0
 end
@@ -147,21 +151,21 @@ for n in v
     a3 = matrix(R3, a0)
     a4 = matrix(R4, a0)
 
-    t1 = prettytime(@belapsed inv($a1))
+    t1 = prettytime(@b inv($a1))
     if n <= 1000
-        t2 = prettytime(@belapsed detx($a2))
+        t2 = prettytime(@b detx($a2))
     else
         t2 = skipped
     end
     if n <= 500
-        t3 = prettytime(@belapsed inv($a3))
+        t3 = prettytime(@b inv($a3))
     else
         t3 = skipped
     end
-    t4 = prettytime(@belapsed inv($a4))
-    
+    t4 = prettytime(@b inv($a4))
+
     s0 = "| $n | $t1 | $t2 | $t3 | $t4 |\n"
-    
+
     print(stderr, s0)
     s *= s0
 end

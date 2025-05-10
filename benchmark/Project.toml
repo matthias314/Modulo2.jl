@@ -1,5 +1,6 @@
 [deps]
 AbstractAlgebra = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
+Chairmarks = "0ca39b1e-fe0b-4e98-acfc-b1656634c4de"
 LinearAlgebraX = "9b3f67b0-2d00-526e-9884-9e4938f8fb88"
 Mods = "7475f97c-0381-53b1-977b-4c60186c8d62"
 Modulo2 = "7e4462cd-8001-4c22-b109-db8e4e581e9c"
