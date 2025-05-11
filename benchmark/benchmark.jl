@@ -20,6 +20,8 @@ function bm_mul(v)
 s = """
 ### Matrix multiplication
 
+`Matrix{ZZ2}` refers to Julia's standard matrix multiplication with coefficients in `ZZ2`.
+
 | size | Modulo2 | Matrix{ZZ2} | AbstractAlgebra | Nemo |
 | ---: | ---: | ---: | ---: | ---: |
 """
@@ -133,7 +135,7 @@ end
 
 function bm_inv(v)
 s = """
-### Inverse
+### Matrix inverse
 
 | size | Modulo2 | LinearAlgebraX | AbstractAlgebra | Nemo |
 | ---: | ---: | ---: | ---: | ---: |
