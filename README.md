@@ -25,55 +25,57 @@ The timings are for square matrices of the size indicated.
 
 | size | Modulo2 | Matrix{ZZ2} | AbstractAlgebra | Nemo |
 | ---: | ---: | ---: | ---: | ---: |
-| 125 | 931.770 μs | 12.569 ms | 291.501 ms | 1.340 ms |
-| 250 | 3.933 ms | 101.226 ms | 2.287 s | 6.821 ms |
-| 500 | 16.353 ms | 809.666 ms | 18.969 s | 40.489 ms |
-| 1000 | 72.019 ms | 6.562 s | *skipped* | 260.374 ms |
-| 2000 | 338.997 ms | *skipped* | *skipped* | 1.909 s |
-| 4000 | 1.810 s | *skipped* | *skipped* | 14.918 s |
-| 8000 | 25.469 s | *skipped* | *skipped* | 111.866 s |
+| 125 | 96.809 μs | 868.790 μs | 30.176 ms | 137.154 μs |
+| 250 | 417.656 μs | 6.820 ms | 248.557 ms | 685.672 μs |
+| 500 | 1.918 ms | 52.957 ms | 1.920 s | 4.383 ms |
+| 1000 | 8.780 ms | 415.689 ms | *skipped* | 25.891 ms |
+| 2000 | 43.421 ms | *skipped* | *skipped* | 240.183 ms |
+| 4000 | 264.777 ms | *skipped* | *skipped* | 1.391 s |
+| 8000 | 3.340 s | *skipped* | *skipped* | 10.282 s |
 
 ### Rank
 
 | size | Modulo2 | LinearAlgebraX | AbstractAlgebra | Nemo |
 | ---: | ---: | ---: | ---: | ---: |
-| 125 | 361.280 μs | 73.607 ms | 100.184 ms | 9.690 ms |
-| 250 | 1.692 ms | 983.601 ms | 796.266 ms | 41.400 ms |
-| 500 | 7.012 ms | 7.683 s | 6.530 s | 188.034 ms |
-| 1000 | 32.872 ms | *skipped* | *skipped* | 1.586 s |
-| 2000 | 160.160 ms | *skipped* | *skipped* | 8.824 s |
-| 4000 | 905.736 ms | *skipped* | *skipped* | 46.453 s |
-| 8000 | 12.606 s | *skipped* | *skipped* | 218.142 s |
+| 125 | 49.495 μs | 10.139 ms | 12.187 ms | 1.162 ms |
+| 250 | 227.735 μs | 125.813 ms | 86.832 ms | 4.902 ms |
+| 500 | 990.822 μs | 944.049 ms | 689.586 ms | 22.287 ms |
+| 1000 | 4.363 ms | *skipped* | *skipped* | 183.620 ms |
+| 2000 | 20.575 ms | *skipped* | *skipped* | 821.456 ms |
+| 4000 | 114.753 ms | *skipped* | *skipped* | 2.917 s |
+| 8000 | 1.475 s | *skipped* | *skipped* | 14.506 s |
 
 ### Determinant
 
 | size | Modulo2 | LinearAlgebraX | AbstractAlgebra | Nemo |
 | ---: | ---: | ---: | ---: | ---: |
-| 125 | 382.600 μs | 40.103 ms | 256.972 ms | 9.643 ms |
-| 250 | 1.798 ms | 328.040 ms | 2.129 s | 41.668 ms |
-| 500 | 7.620 ms | 2.679 s | 17.296 s | 188.500 ms |
-| 1000 | 33.899 ms | 21.416 s | *skipped* | 1.491 s |
-| 2000 | 160.628 ms | *skipped* | *skipped* | 8.750 s |
-| 4000 | 904.472 ms | *skipped* | *skipped* | 43.444 s |
-| 8000 | 12.870 s | *skipped* | *skipped* | 199.009 s |
+| 125 | 44.803 μs | 4.838 ms | 29.456 ms | 1.538 ms |
+| 250 | 214.386 μs | 38.796 ms | 230.214 ms | 4.907 ms |
+| 500 | 913.450 μs | 310.935 ms | 1.860 s | 28.394 ms |
+| 1000 | 4.172 ms | 2.519 s | *skipped* | 250.680 ms |
+| 2000 | 20.911 ms | *skipped* | *skipped* | 969.185 ms |
+| 4000 | 116.159 ms | *skipped* | *skipped* | 3.172 s |
+| 8000 | 1.557 s | *skipped* | *skipped* | 14.594 s |
 
 ### Matrix inverse
 
 | size | Modulo2 | LinearAlgebraX | AbstractAlgebra | Nemo |
 | ---: | ---: | ---: | ---: | ---: |
-| 125 | 1.249 ms | 40.871 ms | 523.685 ms | 11.649 ms |
-| 250 | 5.062 ms | 327.477 ms | 4.521 s | 56.150 ms |
-| 500 | 22.127 ms | 2.669 s | 36.821 s | 297.618 ms |
-| 1000 | 98.185 ms | 21.390 s | *skipped* | 1.479 s |
-| 2000 | 551.627 ms | *skipped* | *skipped* | 7.842 s |
-| 4000 | 3.549 s | *skipped* | *skipped* | 43.986 s |
-| 8000 | 70.131 s | *skipped* | *skipped* | 277.870 s |
+| 125 | 140.391 μs | 4.838 ms | 54.038 ms | 1.484 ms |
+| 250 | 575.657 μs | 38.790 ms | 443.860 ms | 7.113 ms |
+| 500 | 2.594 ms | 311.347 ms | 3.717 s | 35.020 ms |
+| 1000 | 12.623 ms | 2.568 s | *skipped* | 310.629 ms |
+| 2000 | 67.567 ms | *skipped* | *skipped* | 841.042 ms |
+| 4000 | 509.087 ms | *skipped* | *skipped* | 5.103 s |
+| 8000 | 7.770 s | *skipped* | *skipped* | 27.526 s |
 
 Package versions:
-Mods v2.2.4,
-LinearAlgebraX v0.2.7,
-AbstractAlgebra v0.40.1,
-Nemo v0.43.1
+Modulo2: 0.2.3,
+Mods: 2.2.6,
+LinearAlgebraX: 0.2.10,
+AbstractAlgebra: 0.44.13,
+Nemo: 0.49.2;
+Julia 1.11.5
 
 Computer: Intel Core i3-10110U CPU @ 2.10GHz with 8GB RAM
 
