@@ -784,9 +784,9 @@ import Base.Broadcast: BroadcastStyle
 
 struct ZZ2ArrayStyle{N} <: AbstractArrayStyle{N} end
 
-BroadcastStyle(::Type{ZZ2Array{N}}) where N = ZZ2ArrayStyle{N}()
+(::Type{<:ZZ2ArrayStyle})(::Val{N}) where N = ZZ2ArrayStyle{N}()
 
-BroadcastStyle(::ZZ2ArrayStyle{N}, ::DefaultArrayStyle{0}) where N = ZZ2ArrayStyle{N}()
+BroadcastStyle(::Type{ZZ2Array{N}}) where N = ZZ2ArrayStyle{N}()
 
 similar(bc::Broadcasted{ZZ2ArrayStyle{N}}, ::Type{ZZ2}, dims) where N = similar(ZZ2Array{N}, dims)
 
