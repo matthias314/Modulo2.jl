@@ -152,6 +152,9 @@ end
 @testset "ZZ2Array add" begin
     b1 = fill!(ZZ2Array{0}(undef), ZZ2(0))
     b2 = fill!(ZZ2Array{0}(undef), ZZ2(1))
+    @test b1 == +b1 !== b1
+    @test b1 == -b1 !== b1
+
     c1 = @inferred b1+b2
     c2 = @inferred b1-b2
     @test c1 == c2

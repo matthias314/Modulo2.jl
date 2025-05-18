@@ -450,8 +450,8 @@ function +(a::ZZ2Array{N}, b::ZZ2Array{N}) where N
 end
 
 # without the following methods for +, - and * one gets errors in broadcast_preserving_zero_d
-+(a::ZZ2Array) = a
--(a::ZZ2Array) = a
++(a::ZZ2Array) = copy(a)  # see julia#58295
+-(a::ZZ2Array) = copy(a)
 
 -(a::ZZ2Array{N}, b::ZZ2Array{N}) where N = a+b
 
