@@ -455,7 +455,7 @@ end
 
 -(a::ZZ2Array{N}, b::ZZ2Array{N}) where N = a+b
 
-*(c::Number, a::ZZ2Array) = iszero(c) ? zero(a) : copy(a)
+*(c::Number, a::ZZ2Array) = iszero(ZZ2(c)) ? zero(a) : copy(a)
 # end of the list
 
 *(a::ZZ2Matrix, b::AbstractVector{<:Number}) = mul!(ZZ2Vector(undef, size(a, 1); init = false), a, b)

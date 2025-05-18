@@ -175,7 +175,12 @@ end
     c0 = @inferred ZZ2(0)*a
     c1 = @inferred ZZ2(1)*a
     @test iszero(c0)
-    @test c1 == a
+    @test a == c1 !== a
+
+    c0 = @inferred 2*a
+    c1 = @inferred 3*a
+    @test iszero(c0)
+    @test a == c1 !== a
 
     for d in 1:4, _ in 1:3
         n = round(Int, maxn^(1/d))
