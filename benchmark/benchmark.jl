@@ -29,9 +29,11 @@ for n in v
     a0 = rand(Bool, n, n)
     b0 = rand(Bool, n, n)
 
+    GC.gc(true)
     t1 = let a1 = ZZ2Matrix(a0), b1 = ZZ2Matrix(b0)
         prettytime(@b $a1 * $b1)
     end
+    GC.gc(true)
     if n <= 1000
         t2 = let a2 = map(ZZ2, a0), b2 = map(ZZ2, b0)
             prettytime(@b $a2 * $b2)
@@ -39,6 +41,7 @@ for n in v
     else
         t2 = skipped
     end
+    GC.gc(true)
     if n <= 500
         t3 = let a3 = matrix(R3, a0), b3 = matrix(R3, b0)
             prettytime(@b $a3 * $b3)
@@ -46,6 +49,7 @@ for n in v
     else
         t3 = skipped
     end
+    GC.gc(true)
     t4 = let a4 = matrix(R4, a0), b4 = matrix(R4, b0)
         prettytime(@b $a4 * $b4)
     end
@@ -68,9 +72,11 @@ s = """
 for n in v
     a0 = rand(Bool, n, n)
 
+    GC.gc(true)
     t1 = let a1 = ZZ2Matrix(a0)
         prettytime(@b Modulo2.rank($a1))
     end
+    GC.gc(true)
     if n <= 500
         t2 = let a2 = map(R2, a0)
             prettytime(@b rankx($a2))
@@ -78,6 +84,7 @@ for n in v
     else
         t2 = skipped
     end
+    GC.gc(true)
     if n <= 500
         t3 = let a3 = matrix(R3, a0)
             prettytime(@b AbstractAlgebra.rank($a3))
@@ -85,6 +92,7 @@ for n in v
     else
         t3 = skipped
     end
+    GC.gc(true)
     t4 = let a4 = matrix(R4, a0)
         prettytime(@b AbstractAlgebra.rank($a4))
     end
@@ -107,23 +115,30 @@ s = """
 for n in v
     a0 = rand(Bool, n, n)
 
-    a1 = ZZ2Matrix(a0)
-    a2 = map(R2, a0)
-    a3 = matrix(R3, a0)
-    a4 = matrix(R4, a0)
-
-    t1 = prettytime(@b det($a1))
-    if n <= 1000
-        t2 = prettytime(@b detx($a2))
-    else
-        t2 = skipped
+    GC.gc(true)
+    t1 = let a1 = ZZ2Matrix(a0)
+        prettytime(@b det($a1))
     end
-    if n <= 500
-        t3 = prettytime(@b det($a3))
+    GC.gc(true)
+    t2 = if n <= 1000
+        let a2 = map(R2, a0)
+            prettytime(@b detx($a2))
+        end
     else
-        t3 = skipped
+        skipped
     end
-    t4 = prettytime(@b det($a4))
+    GC.gc(true)
+    t3 = if n <= 500
+        let a3 = matrix(R3, a0)
+            prettytime(@b det($a3))
+        end
+    else
+        skipped
+    end
+    GC.gc(true)
+    t4 = let a4 = matrix(R4, a0)
+        prettytime(@b det($a4))
+    end
 
     s0 = "| $n | $t1 | $t2 | $t3 | $t4 |\n"
 
@@ -141,7 +156,7 @@ s = """
 | ---: | ---: | ---: | ---: | ---: |
 """
 for n in v
-    local a0, a1
+    local a0
 
     while true
         a0 = rand(Bool, n, n)
@@ -149,22 +164,30 @@ for n in v
         iszero(det(a1)) || break
     end
 
-    a2 = map(R2, a0)
-    a3 = matrix(R3, a0)
-    a4 = matrix(R4, a0)
-
-    t1 = prettytime(@b inv($a1))
-    if n <= 1000
-        t2 = prettytime(@b detx($a2))
-    else
-        t2 = skipped
+    GC.gc(true)
+    t1 = let a1 = ZZ2Matrix(a0)
+        prettytime(@b inv($a1))
     end
-    if n <= 500
-        t3 = prettytime(@b inv($a3))
+    GC.gc(true)
+    t2 = if n <= 1000
+        let a2 = map(R2, a0)
+            prettytime(@b detx($a2))
+        end
     else
-        t3 = skipped
+        skipped
     end
-    t4 = prettytime(@b inv($a4))
+    GC.gc(true)
+    t3 = if n <= 500
+        let a3 = matrix(R3, a0)
+            prettytime(@b inv($a3))
+        end
+    else
+        skipped
+    end
+    GC.gc(true)
+    t4 = let a4 = matrix(R4, a0)
+        prettytime(@b inv($a4))
+    end
 
     s0 = "| $n | $t1 | $t2 | $t3 | $t4 |\n"
 
