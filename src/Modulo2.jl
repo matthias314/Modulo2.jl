@@ -235,13 +235,7 @@ ZZ2Array(::UndefInitializer, ii::NTuple{N,Integer}; init = true) where N = ZZ2Ar
 
 ZZ2Array(::UndefInitializer, ii::Integer...; init = true) = ZZ2Array(undef, ii; init)
 
-function ZZ2Array{N}(a::AbstractArray{T,N}) where {T,N}
-    b = ZZ2Array{N}(undef, size(a))
-    for i in eachindex(a, b)
-        @inbounds b[i] = a[i]
-    end
-    b
-end
+ZZ2Array{N}(a::AbstractArray{T,N}) where {T,N} = copyto!(ZZ2Array{N}(undef, size(a)), a)
 
 ZZ2Array{N}(a::ZZ2Array{N}) where N = copy(a)
 
