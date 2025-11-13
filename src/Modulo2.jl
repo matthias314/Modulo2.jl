@@ -241,6 +241,8 @@ ZZ2Array{N}(a::ZZ2Array{N}) where N = copy(a)
 
 ZZ2Array(a::AbstractArray{T,N}) where {T,N} = ZZ2Array{N}(a)
 
+ZZ2Vector(a::Tuple) = copyto!(ZZ2Vector(undef, length(a)), a)
+
 similar(::Type{<:ZZ2Array}, ::Type{ZZ2}, ii::Dims) = ZZ2Array(undef, ii)
 similar(::ZZ2Array, ::Type{ZZ2}, ii::Dims) = ZZ2Array(undef, ii)
 

@@ -116,6 +116,11 @@ const maxn = 20000
         @test iszero(a)
         a = ones(ZZ2, ntuple(i -> 5*i, n)...)
         @test all(isone, a)
+
+        for v in (rand(Bool, n), rand(Int8, n))
+            t = Tuple(v)
+            @test ZZ2Vector(t) == ZZ2Vector(v)
+        end
     end
 end
 
